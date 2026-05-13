@@ -16,7 +16,7 @@ return new class extends Migration
 
             // Main Author
             $table->string('main_author_name');
-            $table->string('main_author_email')->unique();
+            $table->string('main_author_email');
             $table->string('main_author_institution');
             $table->string('main_author_phone');
 

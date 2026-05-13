@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 use App\Helpers\ApiResponse; // Import helper jika ada
+use App\Http\Resources\UserResource;
 
 class AuthController extends Controller
 {
@@ -27,9 +28,9 @@ class AuthController extends Controller
 
         return ApiResponse::success('Login berhasil.', [
             'token' => $token,
-            'user' => $user->load('role'),
+            'user' => new UserResource($user->load('role', 'author')),
             'token_type' => 'bearer',
-            'expires_in' => JWTAuth::factory()->getTTL() * 60
+            'expires_in' => JWTAuth::factory()->getTTL() * 60,
         ], 200);
     }
 
