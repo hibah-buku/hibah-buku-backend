@@ -52,7 +52,6 @@ return new class extends Migration
             //rejected 
             $table->string('rejection_reason')->nullable();
             $table->timestamp('rejected_at')->nullable();
-            $table->unsignedBigInteger('user_id')->nullable();
         
             $table->timestamps();
         });
@@ -63,9 +62,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('willingness_forms', function (Blueprint $table) {
-        $table->dropForeign(['user_id']);
-        $table->dropColumn(['rejection_reason', 'rejected_at', 'user_id']);
-    });
+       Schema::dropIfExists('willingness_forms');
     }
+    
 };
