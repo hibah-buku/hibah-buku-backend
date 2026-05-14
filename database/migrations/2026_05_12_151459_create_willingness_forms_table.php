@@ -53,7 +53,6 @@ return new class extends Migration
             $table->string('rejection_reason')->nullable();
             $table->timestamp('rejected_at')->nullable();
             $table->unsignedBigInteger('user_id')->nullable();
-            $table->foreign('user_id')->references('id')->on('users')->nullOnDelete();
         
             $table->timestamps();
         });

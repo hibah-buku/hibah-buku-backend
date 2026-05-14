@@ -9,7 +9,7 @@ class WillingnessForm extends Model
 {
     use HasFactory;
 
-    protected $able = 'willingness_forms';
+    protected $table = 'willingness_forms';
 
     protected $fillable = [
         'main_author_name',
@@ -41,7 +41,6 @@ class WillingnessForm extends Model
 
         'rejection_reason',
         'rejected_at',
-        'users',
         
         'status', // pending, processed, approved, rejected
         'admin_notes',
