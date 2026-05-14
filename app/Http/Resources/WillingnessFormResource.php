@@ -32,8 +32,11 @@ class WillingnessFormResource extends JsonResource
             ],
             'status' => $this->status,
             'admin_notes' => $this->when($request->user()?->role?->name === 'admin', $this->admin_notes),
+            'rejection_reason' => $this->when($this->status === 'rejected', $this->rejection_reason),
+            'rejected_at'      => $this->when($this->status === 'rejected', $this->rejected_at?->toISOString()),
+            'approved_user_id' => $this->when($this->status === 'approved', $this->users),
             'submitted_at' => $this->created_at->toISOString(),
-
+            
             // HATEOAS Links
             '_links' => $this->links($request),
         ];
@@ -98,6 +101,12 @@ class WillingnessFormResource extends JsonResource
                 'check_account' => '/api/auth/me',
             ];
         }
+
+        if ($this->status === 'rejected') {
+        $links['next_step'] = [
+            'message' => 'Form ditolak. Pemohon dapat mengajukan ulang.',
+        ];
+    }
 
         return $links;
     }

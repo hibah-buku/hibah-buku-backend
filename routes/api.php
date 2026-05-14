@@ -47,4 +47,9 @@ Route::middleware('auth:api')->group(function () {
     Route::middleware('role:penerbit')->group(function () {
         Route::get('/publisher/checks', fn() => response()->json(['message' => 'Publisher Endpoint']));
     });
+    Route::middleware(['auth:api', 'role:admin'])->group(function () {
+    Route::get('willingness-forms', [WillingnessFormController::class, 'index']);
+    Route::patch('willingness-forms/{id}/approve', [WillingnessFormController::class, 'approve']);
+    Route::patch('willingness-forms/{id}/rejected', [WillingnessFormController::class, 'reject']); // baru
+});
 });

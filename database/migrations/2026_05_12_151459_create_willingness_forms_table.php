@@ -47,8 +47,14 @@ return new class extends Migration
 
             // Meta data
             $table->enum('status', ['pending', 'processed', 'approved', 'rejected'])->default('pending');
-            $table->text('admin-notes')->nullable();
+            $table->text('admin_notes')->nullable();
 
+            //rejected 
+            $table->string('rejection_reason')->nullable();
+            $table->timestamp('rejected_at')->nullable();
+            $table->unsignedBigInteger('user_id')->nullable();
+            $table->foreign('user_id')->references('id')->on('users')->nullOnDelete();
+        
             $table->timestamps();
         });
     }
@@ -58,6 +64,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('willingness_forms');
+        Schema::table('willingness_forms', function (Blueprint $table) {
+        $table->dropForeign(['user_id']);
+        $table->dropColumn(['rejection_reason', 'rejected_at', 'user_id']);
+    });
     }
 };

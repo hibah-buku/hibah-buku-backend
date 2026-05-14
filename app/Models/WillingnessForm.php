@@ -39,7 +39,14 @@ class WillingnessForm extends Model
         'book_abstract',
         'target_audience',
 
+        'rejection_reason',
+        'rejected_at',
+        'users',
+        
         'status', // pending, processed, approved, rejected
         'admin_notes',
     ];
+    protected $casts = [
+    'rejected_at' => 'datetime',
+];
 }

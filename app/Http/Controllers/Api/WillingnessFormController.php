@@ -115,7 +115,9 @@ class WillingnessFormController extends Controller
         if (!$form) {
             return ApiResponse::error('Data form tidak ditemukan.', 404);
         }
-
+        if ($form->status !== 'pending') {
+            return ApiResponse::error("Form sudah berstatus '{$form->status}', tidak bisa diproses ulang.", 422);
+        }
         // Update status menjadi 'approved'
         // langkah berikutnya: buat logic untuk otomatis membuat User & Author dari data ini
         $form->update(['status' => 'approved']);
@@ -123,6 +125,40 @@ class WillingnessFormController extends Controller
         return ApiResponse::success(
             'Form disetujui. Sistem akan memproses pembuatan akun penulis.',
             new WillingnessFormResource($form)
+
+    
+        );
+    }
+    
+    public function reject(Request $request, $id)
+    {
+        $form = WillingnessForm::find($id);
+
+        if (!$form) {
+            return ApiResponse::error('Data form tidak ditemukan.', 404);
+        }
+
+        if ($form->status !== 'pending') {
+            return ApiResponse::error("Form sudah berstatus '{$form->status}', tidak bisa diproses ulang.", 422);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'rejection_reason' => 'nullable|string|max:500',
+        ]);
+
+        if ($validator->fails()) {
+            return ApiResponse::error('Validasi gagal.', 422, $validator->errors());
+        }
+
+        $form->update([
+            'status'           => 'rejected',
+            'rejection_reason' => $request->rejection_reason,
+            'rejected_at'      => now(),
+        ]);
+
+        return ApiResponse::success(
+            'Form ditolak.',
+            new WillingnessFormResource($form->fresh())
         );
     }
 }
