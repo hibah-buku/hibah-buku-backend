@@ -41,8 +41,8 @@ class WillingnessForm extends Model
 
         'rejection_reason',
         'rejected_at',
-        
-        'status', // pending, processed, approved, rejected
+
+        'status', // pending, approved, rejected
         'admin_notes',
     ];
     protected $casts = [
