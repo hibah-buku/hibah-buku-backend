@@ -15,6 +15,7 @@ class Contract extends Model
     protected $fillable = [
         'author_id',
         'file_path',
+        'original_name',
         'status', // contract_uploaded, contract_validated, contract_rejected
         'draft_deadline',
         'validated_by',
