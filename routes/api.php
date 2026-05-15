@@ -33,7 +33,7 @@ Route::middleware('auth:api')->group(function () {
         Route::patch('/contracts/{contract}/reject', [ContractController::class, 'reject']);
         Route::get('willingness-forms', [WillingnessFormController::class, 'index']);
         Route::patch('willingness-forms/{id}/approve', [WillingnessFormController::class, 'approve']);
-        Route::patch('willingness-forms/{id}/rejected', [WillingnessFormController::class, 'reject']);
+        Route::patch('willingness-forms/{id}/reject', [WillingnessFormController::class, 'reject']);
     });
 
     // Penulis Only
@@ -49,6 +49,6 @@ Route::middleware('auth:api')->group(function () {
 
     Route::middleware('role:penerbit')->group(function () {
         Route::get('/publisher/checks', fn() => response()->json(['message' => 'Publisher Endpoint']));
-    
+
     });
 });

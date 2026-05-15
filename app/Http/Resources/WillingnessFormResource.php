@@ -36,7 +36,7 @@ class WillingnessFormResource extends JsonResource
             'rejected_at'      => $this->when($this->status === 'rejected', $this->rejected_at?->toISOString()),
             'approved_user_id' => $this->when($this->status === 'approved', $this->users),
             'submitted_at' => $this->created_at->toISOString(),
-            
+
             // HATEOAS Links
             '_links' => $this->links($request),
         ];
@@ -94,7 +94,7 @@ class WillingnessFormResource extends JsonResource
             ];
         }
 
-        // Jika approved, tampilkan link next step
+        // Jika approved, menampilkan link next step
         if ($this->status === 'approved') {
             $links['next_step'] = [
                 'message' => 'Form sudah disetujui. Akun penulis akan segera dibuat.',
@@ -102,9 +102,12 @@ class WillingnessFormResource extends JsonResource
             ];
         }
 
+        // JIka reject, menampilkan link registrasi ulang
         if ($this->status === 'rejected') {
-        $links['next_step'] = [
-            'message' => 'Form ditolak. Pemohon dapat mengajukan ulang.',
+        $links['submit_new_proposal'] = [
+            'href' => '/api/auth/register-willingness',
+            'method' => 'POST',
+            'message' => 'Form ditolak. Pemohon dapat mengajukan ulang setelah melakukan perbaikan.',
         ];
     }
 
