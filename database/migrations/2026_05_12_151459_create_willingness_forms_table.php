@@ -46,13 +46,13 @@ return new class extends Migration
             $table->string('target_audience')->nullable();
 
             // Meta data
-            $table->enum('status', ['pending', 'processed', 'approved', 'rejected'])->default('pending');
+            $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
             $table->text('admin_notes')->nullable();
 
-            //rejected 
+            //rejected
             $table->string('rejection_reason')->nullable();
             $table->timestamp('rejected_at')->nullable();
-        
+
             $table->timestamps();
         });
     }
@@ -64,5 +64,5 @@ return new class extends Migration
     {
        Schema::dropIfExists('willingness_forms');
     }
-    
+
 };

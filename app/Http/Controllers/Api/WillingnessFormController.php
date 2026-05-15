@@ -5,11 +5,17 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Helpers\ApiResponse;
+use Illuminate\Validation\Rule;
 use App\Http\Resources\WillingnessFormResource;
 use App\Models\WillingnessForm;
+use App\Models\User;
+use App\Models\Role;
+use App\Models\Author;
 use App\Http\Resources\WillingnessFormCollection;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 class WillingnessFormController extends Controller
 {
@@ -115,21 +121,61 @@ class WillingnessFormController extends Controller
         if (!$form) {
             return ApiResponse::error('Data form tidak ditemukan.', 404);
         }
+
         if ($form->status !== 'pending') {
             return ApiResponse::error("Form sudah berstatus '{$form->status}', tidak bisa diproses ulang.", 422);
         }
-        // Update status menjadi 'approved'
-        // langkah berikutnya: buat logic untuk otomatis membuat User & Author dari data ini
-        $form->update(['status' => 'approved']);
 
-        return ApiResponse::success(
-            'Form disetujui. Sistem akan memproses pembuatan akun penulis.',
-            new WillingnessFormResource($form)
+        if (User::where('email' , $form->main_author_email)->exists()) {
+            return ApiResponse::error('Akun penulis dengan email tersebut sudah terdaftar di sistem', 409);
+        }
 
-    
-        );
+        try {
+            DB::beginTransaction();
+
+            $randomPassword = Str::random(8);
+
+            $authorRole = Role::where('name', 'penulis')->first();
+            if (!$authorRole) {
+                throw new \Exception("Role 'penulis' tidak ditemukan di database");
+            }
+
+            // Membuat akun role penulis
+            $user = User::create([
+                'name' => $form->main_author_name,
+                'email' => $form->main_author_email,
+                'password' => Hash::make($randomPassword),
+                'role_id' => $authorRole->id,
+                'status' => 'active'
+            ]);
+
+            // Menulis author profile
+            Author::create([
+                'user_id' => $user->id,
+                'institution' => $form->main_author_institution,
+                'field_of_study' => $form->field_of_study,
+            ]);
+
+            $form->update([
+                'status' => 'approved',
+                'admin_notes' => "Akun penulis otomatis dibuat pada " . now()->toISOString(),
+            ]);
+
+            DB::commit();
+
+            $form->setAttribute('linked_user_id', $user->id);
+            $form->setAttribute('temporary_password', $randomPassword); // Hanya untuk response admin
+
+            return ApiResponse::success(
+                'Form disetujui. Akun penulis berhasil dibuat.',
+                new WillingnessFormResource($form)
+            );
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return ApiResponse::error('Gagal memproses pembuatan akun: ' . $e->getMessage(), 500);
+        }
     }
-    
+
     public function reject(Request $request, $id)
     {
         $form = WillingnessForm::find($id);

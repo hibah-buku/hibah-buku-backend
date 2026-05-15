@@ -28,12 +28,11 @@ Route::middleware('auth:api')->group(function () {
     Route::middleware('role:admin')->group(function () {
         Route::get('/willingness-forms', [WillingnessFormController::class, 'index']);
         Route::patch('/willingness-forms/{id}/approve', [WillingnessFormController::class, 'approve']);
+        Route::patch('/willingness-forms/{id}/reject', [WillingnessFormController::class, 'reject']);
         Route::post('/users', [AuthorController::class, 'createManualUser']);
+        Route::get('/contracts', [ContractController::class, 'index']);
         Route::patch('/contracts/{contract}/validate', [ContractController::class, 'validate']);
         Route::patch('/contracts/{contract}/reject', [ContractController::class, 'reject']);
-        Route::get('willingness-forms', [WillingnessFormController::class, 'index']);
-        Route::patch('willingness-forms/{id}/approve', [WillingnessFormController::class, 'approve']);
-        Route::patch('willingness-forms/{id}/reject', [WillingnessFormController::class, 'reject']);
     });
 
     // Penulis Only
