@@ -2,25 +2,34 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\UserCollection;
 use Illuminate\Http\Request;
+use App\Models\User;
 
-class AuthorController extends Controller
+class UserController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * UC-03: Index Users (List Reviewer/Penerbit/Admin)
+     * GET /api/users
      */
-    public function index()
+    public function index(Request $request)
     {
-        //
-    }
+        $query = User::with('role');
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
+        if ($request->has('role')) {
+            $query->whereHas('role', function($q) use ($request) {
+                $q->whereHas('role', $request->role);
+            });
+        }
+
+        $users = $query->orderBy('created_at', 'desc')->paginate(10);
+
+        return ApiResponse::success(
+            'Daftar Pengguna.',
+            new UserCollection($users)
+        );
     }
 
     /**
@@ -35,14 +44,6 @@ class AuthorController extends Controller
      * Display the specified resource.
      */
     public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
     {
         //
     }

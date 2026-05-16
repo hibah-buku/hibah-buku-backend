@@ -26,22 +26,35 @@ class UserResource extends JsonResource
      private function links(Request $request): array
     {
         $links = [
-            'self' => '/api/auth/me',
-            'logout' => [
+            'self' => "/api/users/{$this->id}",
+        ];
+
+        if ($request->user()->id === $this->id) {
+            $links['logout'] = [
+                'message' => ' logout',
                 'href' => '/api/auth/logout',
                 'method' => 'POST',
-            ],
-        ];
+            ];
+        }
 
         // Role-based links
         $role = $this->role?->name;
 
         if ($role === 'admin') {
-            $links['dashboard'] = '/api/admin/dashboard';
-            $links['willingness_forms'] = '/api/willingness-forms';
-            $links['create_user'] = [
+            $links['willingness_forms'] = [
+                'message' => 'Manajemen form kesediaan calon penulis',
+                'href' =>'/api/willingness-forms',
+                'method' => 'GET'
+            ];
+            $links['contracts'] = [
+                'message' => 'Manajemen Kontrak penulis',
+                'href' => '/api/contracts',
+                'method' => 'GET'
+            ];
+            $links['manage_users'] = [
+                'message' => 'Manajemen User',
                 'href' => '/api/users',
-                'method' => 'POST',
+                'method' => 'GET'
             ];
         } elseif ($role === 'penulis') {
             $links['upload_contract'] = [
@@ -49,13 +62,15 @@ class UserResource extends JsonResource
                 'method' => 'POST',
             ];
             $links['my_contract'] = '/api/contracts/me';
-        } elseif ($role === 'reviewer') {
+        } elseif ($role === 'reviewer') { // Tugas kelompok lain
             $links['lorem'] = [
+                'message' => 'lorem ipsum dolor sit amet',
                 'href' => '/api/lorem',
                 'method' =>  'GET'
             ];
-        } elseif ($role === 'penerbit') {
+        } elseif ($role === 'penerbit') { // Tugas kelompok lain
             $links['lorem'] = [
+                'message' => 'lorem ipsum dolor sit amet',
                 'href' => '/api/lorem',
                 'method' =>  'GET'
             ];

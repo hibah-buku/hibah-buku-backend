@@ -2,7 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\WillingnessFormController;
-use App\Http\Controllers\Api\AuthorController;
+use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\ContractController;
 use Illuminate\Support\Facades\Route;
 
@@ -31,8 +31,8 @@ Route::middleware('auth:api')->group(function () {
         Route::patch('/willingness-forms/{id}/approve', [WillingnessFormController::class, 'approve']);
         Route::patch('/willingness-forms/{id}/reject', [WillingnessFormController::class, 'reject']);
 
-        // User Manajeme
-        Route::post('/users', [AuthorController::class, 'createManualUser']);
+        // User Manajemen
+        Route::apiResource('users', UserController::class)->only(['index']);
 
         // Kontrak Manajemen
         Route::get('/contracts', [ContractController::class, 'index']);
