@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 use App\Helpers\ApiResponse; // Import helper jika ada
+use App\Http\Resources\UserCollection;
 use App\Http\Resources\UserResource;
 
 class AuthController extends Controller
@@ -51,6 +52,8 @@ class AuthController extends Controller
     public function me()
     {
         $user = JWTAuth::user();
-        return ApiResponse::success('Profil pengguna.', $user->load('role', 'author'), 200);
+        return ApiResponse::success('Profil pengguna.',
+        new UserResource($user),
+        200);
     }
 }
