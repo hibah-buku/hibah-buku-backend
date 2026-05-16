@@ -24,9 +24,9 @@ class Author extends Model
     }
 
     // Relasi: Author punya satu Contract (One-to-One)
-    public function contract()
+    public function contracts()
     {
-        return $this->hasOne(Contract::class);
+        return $this->hasMany(Contract::class);
     }
 
     // Relasi: Author punya satu Willingness Form (via email matching atau logic lain)

@@ -58,10 +58,24 @@ class UserResource extends JsonResource
             ];
         } elseif ($role === 'penulis') {
             $links['upload_contract'] = [
+                'message' => 'Upload kontrak',
                 'href' => '/api/contracts',
                 'method' => 'POST',
             ];
-            $links['my_contract'] = '/api/contracts/me';
+            $links['view_my_contract'] = [
+                'message' => 'Lihat status dan detail kontrak Anda.',
+                'href' => '/api/contracts/me',
+                'method' => 'GET',
+            ];
+            if ($this->author && $this->author->contracts()->exists()) {
+                $contractId = $this->author->contracts()->latest()->first()->id;
+
+                $links['download_contract'] = [
+                    'message' => 'Unduh file kontrak Anda.',
+                    'href' => "/api/contracts/{$contractId}/download",
+                    'method' => 'GET',
+                ];
+            }
         } elseif ($role === 'reviewer') { // Tugas kelompok lain
             $links['lorem'] = [
                 'message' => 'lorem ipsum dolor sit amet',
