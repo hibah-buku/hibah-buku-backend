@@ -73,6 +73,6 @@ Route::middleware('auth:api')->group(function () {
 
     Route::middleware('role:penerbit')->group(function () {
         Route::get('/publisher/checks', fn() => response()->json(['message' => 'Publisher Endpoint']));
-
+        Route::get('/publisher/dashboard', [PublisherController::class, 'dashboard']);
     });
 });
