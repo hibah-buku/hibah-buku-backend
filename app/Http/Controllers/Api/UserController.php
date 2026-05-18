@@ -9,11 +9,16 @@ use App\Models\Role;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use App\Helpers\ApiResponse;
+use App\Http\Resources\UserResource;
+use App\Http\Resources\UserCollection;
 
 class UserController extends Controller
 {
     /**
-     * UC-03: Index Users (List Reviewer/Penerbit/Admin)
+     * Index Users (List Reviewer/Penerbit/Admin)
      * GET /api/users
      */
     public function index(Request $request)
@@ -28,65 +33,24 @@ class UserController extends Controller
 
         $users = $query->orderBy('created_at', 'desc')->paginate(10);
 
-        $data = $users->map(function ($user) {
-            return [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'role' => $user->role->name,
-                'status' => $user->status,
-
-                '_links' => [
-                    'self' => [
-                        'href' => url("/api/users/{$user->id}"),
-                        'method' => 'GET'
-                    ],
-                    'update' => [
-                        'href' => url("/api/users/{$user->id}"),
-                        'method' => 'PATCH'
-                    ],
-                    'deactivate' => [
-                        'href' => url("/api/users/{$user->id}"),
-                        'method' => 'DELETE'
-                    ]
-                ]
-            ];
-        });
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Data pengguna berhasil diambil.',
-            'data' => $data,
-
-            'meta' => [
-                'current_page' => $users->currentPage(),
-                'last_page' => $users->lastPage(),
-                'total' => $users->total(),
-            ],
-
-            '_links' => [
-                'self' => [
-                    'href' => url('/api/users'),
-                    'method' => 'GET'
-                ],
-                'create' => [
-                    'href' => url('/api/users'),
-                    'method' => 'POST'
-                ]
-            ]
-        ], 200);
+        return ApiResponse::success(
+            'Data pengguna berhasil diambil.',
+            new UserCollection($users),
+            200
+        );
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Create Users (List Reviewer/Penerbit/Admin)
+     * POST /api/users
      */
     public function store(Request $request)
-    {    
+    {
         // Validasi input
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
-            'role' => 'required|string|in:reviewer,penerbit',
+            'role_name' => 'required|in:reviewer,penerbit,admin',
         ]);
 
         // Jika validasi gagal
@@ -94,283 +58,176 @@ class UserController extends Controller
 
             // Email sudah digunakan
             if ($validator->errors()->has('email')) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Email sudah digunakan. Silahkan login atau gunakan email lain.',
-                    'data' => $validator->errors()
-                ], 409);
+                return ApiResponse::error('Email sudah digunakan. Silahkan login atau gunakan email lain', 409, $validator->errors());
             }
 
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validasi gagal.',
-                'data' => $validator->errors()
-            ], 422);
+            return ApiResponse::error('Validasi gagal.', 422, $validator->errors());
         }
 
         // Data valid
         $validated = $validator->validated();
 
         // Cari role
-        $role = Role::where('name', $validated['role'])->first();
+        $role = Role::where('name', $request->role_name)->first();
 
         // Role tidak valid
         if (!$role) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validasi gagal. Role tidak valid.',
-                'data' => null
-            ], 400);
+            throw new \Exception("Role '{$request->role_name}' tidak ditemukan di tabel roles.");
         }
 
-        // Generate password random
-        $plainPassword = Str::random(10);
+       try {
+            DB::beginTransaction();
 
-        // Simpan user
-        $user = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($plainPassword),
-            'role_id' => $role->id,
-            'status' => 'active',
-        ]);
+            // Mencari role berdasarkan nama
+            $role = Role::where('name', $request->role_name)->first();
 
-        // Response sukses
-        return response()->json([
-        'status' => 'success',
-        'message' => 'Akun berhasil dibuat. Kredensial telah dikirim ke email.',
-        'data' => [
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-            'role' => $role->name,
-            'status' => $user->status,
-            'created_at' => $user->created_at,
+            if (!$role) {
+                throw new \Exception("Role '{$request->role_name}' tidak ditemukan.");
+            }
 
-            '_links' => [
-                'self' => [
-                    'href' => url("/api/users/{$user->id}"),
-                    'method' => 'GET'
-                ],
-                'update' => [
-                    'href' => url("/api/users/{$user->id}"),
-                    'method' => 'PATCH'
-                ],
-                'deactivate' => [
-                    'href' => url("/api/users/{$user->id}"),
-                    'method' => 'DELETE'
-                ],
-                'all_users' => [
-                    'href' => url("/api/users"),
-                    'method' => 'GET'
-                ]
-            ]
-        ]
-    ], 201);
+            // Meng-generate password random jika tidak diisi
+            $plainPassword = $request->password ?? Str::random(10);
+
+            // Menyimpan user
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($plainPassword),
+                'role_id' => $role->id,
+                'status' => 'active',
+            ]);
+
+            DB::commit();
+
+            return ApiResponse::success(
+                "Akun {$request->role_name} berhasil dibuat. Kredensial telah dikirim ke email.",
+                new UserResource($user),
+                201
+            );
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return ApiResponse::error('Gagal membuat akun: ' . $e->getMessage(), 500);
+        }
     }
 
     /**
      * Display the specified resource.
+     * GET /api/users/{id}
      */
     public function show(string $id)
     {
         $user = User::with('role')->find($id);
 
-        // Jika user tidak ditemukan
         if (!$user) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Pengguna tidak ditemukan.',
-                'data' => null
-            ], 404);
+            return ApiResponse::error('Pengguna tidak ditemukan.', 404);
         }
 
-        return response()->json([
-        'status' => 'success',
-        'message' => 'Detail pengguna berhasil diambil.',
-        'data' => [
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-            'role' => $user->role->name,
-            'status' => $user->status,
-            'created_at' => $user->created_at,
-
-            '_links' => [
-                'all_users' => [
-                    'href' => url('/api/users'),
-                    'method' => 'GET'
-                ],
-                'update' => [
-                    'href' => url("/api/users/{$user->id}"),
-                    'method' => 'PATCH'
-                ],
-                'deactivate' => [
-                    'href' => url("/api/users/{$user->id}"),
-                    'method' => 'DELETE'
-                ]
-            ]
-        ]
-    ], 200);
+        return ApiResponse::success(
+            'Detail pengguna berhasil diambil.',
+            new UserResource($user),
+            200
+        );
     }
 
     /**
      * Update the specified resource in storage.
+     * PATCH /api/users/{id}
      */
     public function update(Request $request, string $id)
     {
-        // Cari user
+        // Mencari user
         $user = User::with('role')->find($id);
 
         // Jika user tidak ditemukan
         if (!$user) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Pengguna tidak ditemukan.',
-                'data' => null
-            ], 404);
+            return ApiResponse::error('Pengguna tidak ditemukan.', 404);
         }
 
         // Validasi input
         $validator = Validator::make($request->all(), [
             'status' => 'nullable|in:active,inactive',
-            'role' => 'nullable|in:reviewer,penerbit',
+            'role_name' => 'nullable|in:reviewer,penerbit,admin,penulis',
         ]);
 
         // Jika validasi gagal
         if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validasi gagal. Role tidak valid.',
-                'data' => null
-            ], 400);
+            return ApiResponse::error('Validasi gagal.', 422, $validator->errors());
         }
 
-        $validated = $validator->validated();
+        try {
+            DB::beginTransaction();
 
-        /**
-         * Update status
-         */
-        if (isset($validated['status'])) {
-            $user->status = $validated['status'];
-        }
+            $validated = $validator->validated();
 
-        /**
-         * Update role
-         */
-        if (isset($validated['role'])) {
-
-            // Cari role berdasarkan nama
-            $role = Role::where('name', $validated['role'])->first();
-
-            // Jika role tidak ditemukan
-            if (!$role) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Validasi gagal. Role tidak valid.',
-                    'data' => null
-                ], 400);
+            // Mengupdate status
+            if (isset($validated['status'])) {
+                $user->status = $validated['status'];
             }
 
-            // Update foreign key role_id
-            $user->role_id = $role->id;
+            // Mengupdate role
+            if (isset($validated['role_name'])) {
+                $role = Role::where('name', $validated['role_name'])->first();
+                if (!$role) {
+                    throw new \Exception("Role tidak valid.");
+                }
+                $user->role_id = $role->id;
+            }
+
+            $user->save();
+
+            // Refresh relasi
+            $user->refresh();
+
+            DB::commit();
+
+            return ApiResponse::success(
+                'Data pengguna berhasil diperbarui.',
+                new UserResource($user)
+            );
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return ApiResponse::error('Gagal memperbarui data: ' . $e->getMessage(), 500);
         }
-
-        // Simpan perubahan
-        $user->save();
-
-        // Refresh relasi role
-        $user->load('role');
-
-        // Response sukses
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Data pengguna berhasil diperbarui.',
-            'data' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'status' => $user->status,
-                'role' => $user->role->name,
-
-                '_links' => [
-                    'self' => [
-                        'href' => url("/api/users/{$user->id}"),
-                        'method' => 'GET'
-                    ],
-                    'deactivate' => [
-                        'href' => url("/api/users/{$user->id}"),
-                        'method' => 'DELETE'
-                    ],
-                    'all_users' => [
-                        'href' => url('/api/users'),
-                        'method' => 'GET'
-                    ]
-                ]
-            ]
-        ], 200);
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Hapus akun berdasarkan akun.
+     * DELETE /api/users/{id}
      */
     public function destroy(string $id)
     {
-        // Cari user
         $user = User::find($id);
 
-        // Jika user tidak ditemukan
         if (!$user) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Pengguna tidak ditemukan.',
-                'data' => null
-            ], 404);
+            return ApiResponse::error('Pengguna tidak ditemukan.', 404);
         }
 
-        // Cegah admin menonaktifkan akun sendiri
-        if (auth()->id() == $user->id) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Akun sudah nonaktif atau Anda tidak dapat menonaktifkan akun sendiri.',
-                'data' => null
-            ], 400);
+        // Mencegah admin menonaktifkan akun sendiri
+        if (Auth::id() === $user->id) {
+            return ApiResponse::error('Anda tidak dapat menonaktifkan akun sendiri.', 400);
         }
 
-        // Jika akun sudah inactive
-        if ($user->status === 'inactive') {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Akun sudah nonaktif atau Anda tidak dapat menonaktifkan akun sendiri.',
-                'data' => null
-            ], 400);
+        try {
+            DB::beginTransaction();
+
+            $user->status = 'inactive';
+            $user->save();
+
+            $user->delete(); // Soft delete
+
+            DB::commit();
+
+            return ApiResponse::success(
+                'Akun berhasil dinonaktifkan/dihapus.',
+                null,
+                200
+            );
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return ApiResponse::error('Gagal menonaktifkan akun: ' . $e->getMessage(), 500);
         }
-
-        // Ubah status jadi inactive
-        $user->status = 'inactive';
-
-        // Simpan perubahan
-        $user->save();
-
-        // Soft delete
-        $user->delete();
-
-        // Response sukses
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Akun berhasil dinonaktifkan.',
-            'data' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'status' => 'inactive',
-                'deleted_at' => $user->deleted_at,
-
-                '_links' => [
-                    'all_users' => [
-                        'href' => url('/api/users'),
-                        'method' => 'GET'
-                    ]
-                ]
-            ]
-        ], 200);
     }
 }
