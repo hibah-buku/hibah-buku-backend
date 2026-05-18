@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\WillingnessFormController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\ContractController;
+use App\Http\Controllers\Api\PublisherController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -55,6 +56,6 @@ Route::middleware('auth:api')->group(function () {
 
     Route::middleware('role:penerbit')->group(function () {
         Route::get('/publisher/checks', fn() => response()->json(['message' => 'Publisher Endpoint']));
-
+        Route::get('/publisher/dashboard', [PublisherController::class, 'dashboard']);
     });
 });

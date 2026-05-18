@@ -28,13 +28,15 @@ class RoleAndAdminSeeder extends Seeder
         $adminRole = Role::where('name', 'admin')->first();
 
         if ($adminRole) {
-            User::create([
-                'name' => 'SuperAdmin',
-                'email' => 'admin@hibahbuku.ac.id',
-                'password' => Hash::make('password123'),
-                'role_id' => $adminRole->id,
-                'status' => 'active'
-            ]);
+            User::firstOrCreate(
+                ['email' => 'admin@hibahbuku.ac.id'],
+                [
+                    'name' => 'SuperAdmin',
+                    'password' => Hash::make('password123'),
+                    'role_id' => $adminRole->id,
+                    'status' => 'active'
+                ]
+            );
         }
     }
 }
