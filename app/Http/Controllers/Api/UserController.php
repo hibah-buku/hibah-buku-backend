@@ -2,17 +2,13 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
-use App\Http\Resources\UserCollection;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Role;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Validator;
-use App\Events\UserCreated;
 
 class UserController extends Controller
 {
@@ -32,10 +28,53 @@ class UserController extends Controller
 
         $users = $query->orderBy('created_at', 'desc')->paginate(10);
 
-        return ApiResponse::success(
-            'Daftar Pengguna.',
-            new UserCollection($users)
-        );
+        $data = $users->map(function ($user) {
+            return [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role->name,
+                'status' => $user->status,
+
+                '_links' => [
+                    'self' => [
+                        'href' => url("/api/users/{$user->id}"),
+                        'method' => 'GET'
+                    ],
+                    'update' => [
+                        'href' => url("/api/users/{$user->id}"),
+                        'method' => 'PATCH'
+                    ],
+                    'deactivate' => [
+                        'href' => url("/api/users/{$user->id}"),
+                        'method' => 'DELETE'
+                    ]
+                ]
+            ];
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Data pengguna berhasil diambil.',
+            'data' => $data,
+
+            'meta' => [
+                'current_page' => $users->currentPage(),
+                'last_page' => $users->lastPage(),
+                'total' => $users->total(),
+            ],
+
+            '_links' => [
+                'self' => [
+                    'href' => url('/api/users'),
+                    'method' => 'GET'
+                ],
+                'create' => [
+                    'href' => url('/api/users'),
+                    'method' => 'POST'
+                ]
+            ]
+        ], 200);
     }
 
     /**
@@ -96,22 +135,38 @@ class UserController extends Controller
             'status' => 'active',
         ]);
 
-        // Trigger event notifikasi
-        event(new UserCreated($user, $plainPassword));
-
         // Response sukses
         return response()->json([
-            'status' => 'success',
-            'message' => 'Akun berhasil dibuat. Kredensial telah dikirim ke email.',
-            'data' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'role' => $role->name,
-                'status' => $user->status,
-                'created_at' => $user->created_at,
+        'status' => 'success',
+        'message' => 'Akun berhasil dibuat. Kredensial telah dikirim ke email.',
+        'data' => [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'role' => $role->name,
+            'status' => $user->status,
+            'created_at' => $user->created_at,
+
+            '_links' => [
+                'self' => [
+                    'href' => url("/api/users/{$user->id}"),
+                    'method' => 'GET'
+                ],
+                'update' => [
+                    'href' => url("/api/users/{$user->id}"),
+                    'method' => 'PATCH'
+                ],
+                'deactivate' => [
+                    'href' => url("/api/users/{$user->id}"),
+                    'method' => 'DELETE'
+                ],
+                'all_users' => [
+                    'href' => url("/api/users"),
+                    'method' => 'GET'
+                ]
             ]
-        ], 201);
+        ]
+    ], 201);
     }
 
     /**
@@ -127,21 +182,36 @@ class UserController extends Controller
                 'status' => 'error',
                 'message' => 'Pengguna tidak ditemukan.',
                 'data' => null
-            ], 403);
+            ], 404);
         }
 
         return response()->json([
-            'status' => 'success',
-            'message' => 'Detail pengguna berhasil diambil.',
-            'data' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'role' => $user->role->name,
-                'status' => $user->status,
-                'created_at' => $user->created_at,
+        'status' => 'success',
+        'message' => 'Detail pengguna berhasil diambil.',
+        'data' => [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'role' => $user->role->name,
+            'status' => $user->status,
+            'created_at' => $user->created_at,
+
+            '_links' => [
+                'all_users' => [
+                    'href' => url('/api/users'),
+                    'method' => 'GET'
+                ],
+                'update' => [
+                    'href' => url("/api/users/{$user->id}"),
+                    'method' => 'PATCH'
+                ],
+                'deactivate' => [
+                    'href' => url("/api/users/{$user->id}"),
+                    'method' => 'DELETE'
+                ]
             ]
-        ], 200);
+        ]
+    ], 200);
     }
 
     /**
@@ -221,6 +291,21 @@ class UserController extends Controller
                 'name' => $user->name,
                 'status' => $user->status,
                 'role' => $user->role->name,
+
+                '_links' => [
+                    'self' => [
+                        'href' => url("/api/users/{$user->id}"),
+                        'method' => 'GET'
+                    ],
+                    'deactivate' => [
+                        'href' => url("/api/users/{$user->id}"),
+                        'method' => 'DELETE'
+                    ],
+                    'all_users' => [
+                        'href' => url('/api/users'),
+                        'method' => 'GET'
+                    ]
+                ]
             ]
         ], 200);
     }
@@ -278,6 +363,13 @@ class UserController extends Controller
                 'name' => $user->name,
                 'status' => 'inactive',
                 'deleted_at' => $user->deleted_at,
+
+                '_links' => [
+                    'all_users' => [
+                        'href' => url('/api/users'),
+                        'method' => 'GET'
+                    ]
+                ]
             ]
         ], 200);
     }
