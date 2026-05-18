@@ -32,7 +32,7 @@ Route::middleware('auth:api')->group(function () {
         Route::patch('/willingness-forms/{id}/reject', [WillingnessFormController::class, 'reject']);
 
         // User Manajemen
-        Route::apiResource('users', UserController::class)->only(['index']);
+        Route::apiResource('users', UserController::class)->only(['index','store', 'show', 'update', 'destroy']);
 
         // Kontrak Manajemen
         Route::get('/contracts', [ContractController::class, 'index']);
