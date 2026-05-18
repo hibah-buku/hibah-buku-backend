@@ -76,13 +76,13 @@ class UserResource extends JsonResource
                     'method' => 'GET',
                 ];
             }
-        } elseif ($role === 'reviewer') { // Tugas kelompok lain
+        } elseif ($role === 'reviewer') { // Tugas kelompok lain, tolong dilengkapi ya
             $links['lorem'] = [
                 'message' => 'lorem ipsum dolor sit amet',
                 'href' => '/api/lorem',
                 'method' =>  'GET'
             ];
-        } elseif ($role === 'penerbit') { // Tugas kelompok lain
+        } elseif ($role === 'penerbit') { // Tugas kelompok lain, tolong dilengkapi ya
             $links['lorem'] = [
                 'message' => 'lorem ipsum dolor sit amet',
                 'href' => '/api/lorem',
