@@ -66,13 +66,22 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/manuscripts/{manuscript}/download', [ManuscriptDownloadController::class, 'download']);
     });
 
-    // Reviewer & Penerbit Placeholders
-    Route::middleware('role:reviewer')->group(function () {
-        Route::get('/reviews/pending', fn() => response()->json(['message' => 'Reviewer Endpoint']));
-    });
-
     Route::middleware('role:penerbit')->group(function () {
         Route::get('/publisher/checks', fn() => response()->json(['message' => 'Publisher Endpoint']));
         Route::get('/publisher/dashboard', [PublisherController::class, 'dashboard']);
+    });
+
+    Route::prefix('notification-templates')->group(function () {
+        Route::get('/', [NotificationTemplateController::class, 'index']);
+        Route::post('/', [NotificationTemplateController::class, 'store']);
+        Route::get('/{id}', [NotificationTemplateController::class, 'show']);
+        Route::put('/{id}', [NotificationTemplateController::class, 'update']);
+    });
+
+    Route::prefix('notification-logs')->group(function () {
+        Route::get('/', [NotificationLogController::class, 'index']);
+        Route::get('/summary', [NotificationLogController::class, 'summary']);
+        Route::get('/{id}', [NotificationLogController::class, 'show']);
+        Route::delete('/{id}', [NotificationLogController::class, 'destroy']);
     });
 });
