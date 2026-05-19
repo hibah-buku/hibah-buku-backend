@@ -2,21 +2,32 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class NotificationTemplate extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
-        'event_name',
+        'code',
+        'name',
         'subject',
-        'body_template',
+        'view',
+        'available_variables',
+        'is_active',
     ];
 
-    public function logs()
+    protected $casts = [
+        'available_variables' => 'array',
+        'is_active' => 'boolean',
+    ];
+
+    public function logs(): HasMany
     {
-        return $this->hasMany(NotificationLog::class, 'template_id');
+        return $this->hasMany(NotificationLog::class);
+    }
+
+    public static function findByCode(string $code): ?self
+    {
+        return static::where('code', $code)->where('is_active', true)->first();
     }
 }

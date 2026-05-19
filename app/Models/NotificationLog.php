@@ -2,20 +2,23 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class NotificationLog extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
-        'template_id',
-        'recipient_id',
+        'notification_template_id',
+        'template_code',
         'recipient_email',
-        'event_name',
-        'payload',
+        'recipient_name',
+        'notifiable_type',
+        'notifiable_id',
+        'subject',
         'status',
+        'error_message',
+        'payload',
         'sent_at',
     ];
 
@@ -24,13 +27,39 @@ class NotificationLog extends Model
         'sent_at' => 'datetime',
     ];
 
-    public function template()
+    public function template(): BelongsTo
     {
-        return $this->belongsTo(NotificationTemplate::class, 'template_id');
+        return $this->belongsTo(NotificationTemplate::class, 'notification_template_id');
     }
 
-    public function recipient()
+    public function notifiable(): MorphTo
     {
-        return $this->belongsTo(User::class, 'recipient_id');
+        return $this->morphTo();
+    }
+
+    public function markAsSent(): void
+    {
+        $this->update(['status' => 'sent', 'sent_at' => now()]);
+    }
+
+    public function markAsFailed(string $reason): void
+    {
+        $this->update(['status' => 'failed', 'error_message' => $reason]);
+    }
+
+    // Scopes
+    public function scopeSent($query)
+    {
+        return $query->where('status', 'sent');
+    }
+
+    public function scopeFailed($query)
+    {
+        return $query->where('status', 'failed');
+    }
+
+    public function scopeByTemplate($query, string $code)
+    {
+        return $query->where('template_code', $code);
     }
 }
