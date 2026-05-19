@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Storage;
 class ContractController extends Controller
 {
         /**
-     * UC-04: Penulis Upload Kontrak
+     * Penulis Upload Kontrak
      * Endpoint: POST /api/contracts
      * Access: Penulis Only
      */
@@ -62,7 +62,7 @@ class ContractController extends Controller
     }
 
     /**
-     * UC-04: Penulis Melihat Kontrak Miliknya
+     * Penulis Melihat Kontrak Miliknya
      * Endpoint: GET /api/contracts/me
      * Access: Penulis only
      */
@@ -88,7 +88,7 @@ class ContractController extends Controller
     }
 
     /**
-     * UC-04: Admin Validasi Kontrak
+     * Admin Validasi Kontrak
      * Endpoint: PATCH /api/contracts/{contract}/validate
      * Access: Admin only
      */
@@ -144,6 +144,18 @@ class ContractController extends Controller
     {
          $query = Contract::with('author.user');
 
+        $validator = Validator::make($request->all(), [
+            'status' => 'nullable|in:contract_uploaded,contract_validated,contract_rejected',
+        ]);
+
+        if ($validator->fails()) {
+            return ApiResponse::error(
+                'Parameter status tidak valid. Gunakan salah satu dari: contract_generated, contract_uploaded, contract_validated, contract_rejected.',
+                422,
+                $validator->errors()
+            );
+        }
+
          if ($request->has('status')) {
              $query->where('status', $request->status);
          }
@@ -157,7 +169,7 @@ class ContractController extends Controller
     }
 
     /**
-     * UC-04: Download File Kontrak
+     * Download File Kontrak
      * Endpoint: GET /api/contracts/{contract}/download
      * Access: Author pemilik kontrak atau Admin
      */
