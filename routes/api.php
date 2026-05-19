@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\WillingnessFormController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\ContractController;
+use App\Http\Controllers\Api\DashboardController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -26,6 +27,9 @@ Route::middleware('auth:api')->group(function () {
 
     // Admin Only
     Route::middleware('role:admin')->group(function () {
+        // Dashboard
+        Route::get('/dashboard', [DashboardController::class, 'index']);
+
         // Form Kesediaan
         Route::get('/willingness-forms', [WillingnessFormController::class, 'index']);
         Route::patch('/willingness-forms/{id}/approve', [WillingnessFormController::class, 'approve']);
