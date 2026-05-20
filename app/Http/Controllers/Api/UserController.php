@@ -51,6 +51,7 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'role_name' => 'required|in:reviewer,penerbit,admin',
+            'password' => 'nullable|string|min:6',
         ]);
 
         // Jika validasi gagal
@@ -64,19 +65,9 @@ class UserController extends Controller
             return ApiResponse::error('Validasi gagal.', 422, $validator->errors());
         }
 
-        // Data valid
-        $validated = $validator->validated();
-
-        // Cari role
-        $role = Role::where('name', $request->role_name)->first();
-
-        // Role tidak valid
-        if (!$role) {
-            throw new \Exception("Role '{$request->role_name}' tidak ditemukan di tabel roles.");
-        }
-
        try {
             DB::beginTransaction();
+
 
             // Mencari role berdasarkan nama
             $role = Role::where('name', $request->role_name)->first();
@@ -146,8 +137,11 @@ class UserController extends Controller
 
         // Validasi input
         $validator = Validator::make($request->all(), [
-            'status' => 'nullable|in:active,inactive',
-            'role_name' => 'nullable|in:reviewer,penerbit,admin,penulis',
+            'name' => 'sometimes|string|max:255',
+            'email' => 'sometimes|email|unique:users,email,' . $user->id,
+            'status' => 'sometimes|in:active,inactive',
+            'role_name' => 'sometimes|in:reviewer,penerbit,admin,penulis',
+            'password' => 'sometimes|string|min:6',
         ]);
 
         // Jika validasi gagal
@@ -160,12 +154,27 @@ class UserController extends Controller
 
             $validated = $validator->validated();
 
-            // Mengupdate status
+            // Update name
+            if (isset($validated['name'])) {
+                $user->name = $validated['name'];
+            }
+
+            // Update email
+            if (isset($validated['email'])) {
+                $user->email = $validated['email'];
+            }
+
+            // Update password (hash jika diisi)
+            if (isset($validated['password'])) {
+                $user->password = Hash::make($validated['password']);
+            }
+
+            // Update status
             if (isset($validated['status'])) {
                 $user->status = $validated['status'];
             }
 
-            // Mengupdate role
+            // Update role
             if (isset($validated['role_name'])) {
                 $role = Role::where('name', $validated['role_name'])->first();
                 if (!$role) {
