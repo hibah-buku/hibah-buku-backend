@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\WillingnessFormController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\ContractController;
 use App\Http\Controllers\Api\DraftController;
+use App\Http\Controllers\Api\DashboardController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -27,13 +28,16 @@ Route::middleware('auth:api')->group(function () {
 
     // Admin Only
     Route::middleware('role:admin')->group(function () {
+        // Dashboard
+        Route::get('/dashboard', [DashboardController::class, 'index']);
+
         // Form Kesediaan
         Route::get('/willingness-forms', [WillingnessFormController::class, 'index']);
         Route::patch('/willingness-forms/{id}/approve', [WillingnessFormController::class, 'approve']);
         Route::patch('/willingness-forms/{id}/reject', [WillingnessFormController::class, 'reject']);
 
         // User Manajemen
-        Route::apiResource('users', UserController::class)->only(['index']);
+        Route::apiResource('users', UserController::class)->only(['index','store', 'show', 'update', 'destroy']);
 
         // Kontrak Manajemen
         Route::get('/contracts', [ContractController::class, 'index']);
