@@ -15,8 +15,8 @@ use Illuminate\Support\Facades\Storage;
 
 class ContractController extends Controller
 {
-        /**
-     * Penulis Upload Kontrak
+    /**
+     * UC-04: Penulis Upload Kontrak
      * Endpoint: POST /api/contracts
      * Access: Penulis Only
      */
@@ -79,7 +79,7 @@ class ContractController extends Controller
 
         if (!$contract) {
             return ApiResponse::error('Anda belum menggunggah kontrak.', 404);
-            }
+        }
 
         return ApiResponse::success(
             'Detail Kontrak Anda.',
@@ -142,7 +142,7 @@ class ContractController extends Controller
     // Method index untuk Admin
     public function index(Request $request)
     {
-         $query = Contract::with('author.user');
+        $query = Contract::with('author.user');
 
         $validator = Validator::make($request->all(), [
             'status' => 'nullable|in:contract_uploaded,contract_validated,contract_rejected',
@@ -156,16 +156,16 @@ class ContractController extends Controller
             );
         }
 
-         if ($request->has('status')) {
-             $query->where('status', $request->status);
-         }
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
+        }
 
-         $contracts = $query->orderBy('created_at', 'desc')->paginate(10);
+        $contracts = $query->orderBy('created_at', 'desc')->paginate(10);
 
-         return ApiResponse::success(
-             'Daftar semua kontrak.',
-             ContractCollection::make($contracts)
-         );
+        return ApiResponse::success(
+            'Daftar semua kontrak.',
+            ContractCollection::make($contracts)
+        );
     }
 
     /**

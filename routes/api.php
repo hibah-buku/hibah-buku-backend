@@ -4,6 +4,9 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\WillingnessFormController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\ContractController;
+use App\Http\Controllers\Api\ManuscriptController;
+use App\Http\Controllers\Api\DraftUploadController;
+use App\Http\Controllers\Api\ManuscriptDownloadController;
 use App\Http\Controllers\Api\DashboardController;
 use Illuminate\Support\Facades\Route;
 
@@ -47,9 +50,19 @@ Route::middleware('auth:api')->group(function () {
 
     // Penulis Only
     Route::middleware('role:penulis')->group(function () {
+        // Kontrak
         Route::post('/contracts', [ContractController::class, 'upload']);
         Route::get('/contracts/me', [ContractController::class, 'myContract']);
         Route::get('/contracts/{contract}/download', [ContractController::class, 'download']);
+
+        // Naskah (Manuscript)
+        Route::get('/manuscripts/dashboard', [ManuscriptController::class, 'dashboard']);
+        Route::get('/manuscripts/me', [ManuscriptController::class, 'myManuscripts']);
+        Route::post('/manuscripts/upload-draft', [DraftUploadController::class, 'uploadDraft']);
+        Route::get('/manuscripts/{manuscript}', [ManuscriptController::class, 'show']);
+        Route::post('/manuscripts/{manuscript}/upload-revision', [DraftUploadController::class, 'uploadRevision']);
+        Route::get('own/manuscripts/{manuscript}/status', [ManuscriptController::class, 'status']);
+        Route::get('/manuscripts/{manuscript}/download', [ManuscriptDownloadController::class, 'download']);
     });
 
     // Reviewer & Penerbit Placeholders
