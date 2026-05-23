@@ -64,6 +64,12 @@ class User extends Authenticatable implements JWTSubject
         return $this->hasMany(Contract::class, 'validated_by');
     }
 
+    // Relasi: User (Penulis) bisa punya banyak Manuscripts
+    public function manuscripts()
+    {
+        return $this->hasMany(Manuscript::class);
+    }
+
     // Relasi: User (Reviewer) bisa ditugaskan di banyak assignments (Kelompok 3)
     // public function reviewerAssignments()
     // {

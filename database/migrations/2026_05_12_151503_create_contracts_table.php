@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
@@ -15,7 +14,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('author_id')->constrained('authors')->onDelete('cascade');
             $table->string('file_path');
-            $table->string('original_name')->nullable();
+            $table->string('original_name');
             $table->enum('status', ['contract_uploaded', 'contract_validated', 'contract_rejected']);
             $table->timestamp('draft_deadline')->nullable();
             $table->foreignId('validated_by')->nullable()->constrained('users')->onDelete('set null');
