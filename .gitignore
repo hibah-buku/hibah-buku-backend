@@ -25,3 +25,7 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Local seeders (Kelompok 2)
+/database/seeders/ManuscriptSeeder.php
+/database/seeders/WillingnessFormSeeder.php
