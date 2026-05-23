@@ -4,7 +4,9 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\WillingnessFormController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\ContractController;
-use App\Http\Controllers\Api\DraftController;
+use App\Http\Controllers\Api\ManuscriptController;
+use App\Http\Controllers\Api\DraftUploadController;
+use App\Http\Controllers\Api\ManuscriptDownloadController;
 use App\Http\Controllers\Api\DashboardController;
 use Illuminate\Support\Facades\Route;
 
@@ -54,13 +56,13 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/contracts/{contract}/download', [ContractController::class, 'download']);
 
         // Naskah (Manuscript)
-        Route::get('/manuscripts/dashboard', [DraftController::class, 'dashboard']);
-        Route::get('/manuscripts/me', [DraftController::class, 'myManuscripts']);
-        Route::post('/manuscripts/upload-draft', [DraftController::class, 'uploadDraft']);
-        Route::get('/manuscripts/{manuscript}', [DraftController::class, 'show']);
-        Route::post('/manuscripts/{manuscript}/upload-revision', [DraftController::class, 'uploadRevision']);
-        Route::get('own/manuscripts/{manuscript}/status', [DraftController::class, 'status']);
-        Route::get('/manuscripts/{manuscript}/download', [DraftController::class, 'download']);
+        Route::get('/manuscripts/dashboard', [ManuscriptController::class, 'dashboard']);
+        Route::get('/manuscripts/me', [ManuscriptController::class, 'myManuscripts']);
+        Route::post('/manuscripts/upload-draft', [DraftUploadController::class, 'uploadDraft']);
+        Route::get('/manuscripts/{manuscript}', [ManuscriptController::class, 'show']);
+        Route::post('/manuscripts/{manuscript}/upload-revision', [DraftUploadController::class, 'uploadRevision']);
+        Route::get('own/manuscripts/{manuscript}/status', [ManuscriptController::class, 'status']);
+        Route::get('/manuscripts/{manuscript}/download', [ManuscriptDownloadController::class, 'download']);
     });
 
     // Reviewer & Penerbit Placeholders
