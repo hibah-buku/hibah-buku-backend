@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
+use App\Models\Author;
 use App\Models\WillingnessForm;
 use App\Models\Contract;
 use App\Helpers\ApiResponse;
@@ -20,7 +21,7 @@ class DashboardController extends Controller
         // Hitung statistik dasar
         $stats = [
             'total_users' => User::count(),
-            'total_authors' => User::whereHas('role', fn($q) => $q->where('name', 'penulis'))->count(),
+            'total_authors' => Author::count(),
             'pending_willingness_forms' => WillingnessForm::where('status', 'pending')->count(),
             'contracts_waiting_validation' => Contract::where('status', 'contract_uploaded')->count(),
             'validated_contracts' => Contract::where('status', 'contract_validated')->count(),
