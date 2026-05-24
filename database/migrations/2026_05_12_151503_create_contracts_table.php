@@ -22,6 +22,7 @@ return new class extends Migration {
             $table->text('notes')->nullable();
             $table->softDeletes();
             $table->timestamps();
+            $table->index('created_at');
         });
     }
 
