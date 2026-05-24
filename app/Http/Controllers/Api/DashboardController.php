@@ -67,7 +67,10 @@ class DashboardController extends Controller
 
         // User Baru (Role Penulis)
         $users = User::join('roles', 'users.role_id', '=', 'roles.id')
+            ->join('authors', 'users.id', '=', 'authors.user_id') // JOIN ke tabel authors
             ->where('roles.name', 'penulis')
+            ->select('users.*', 'authors.institution', 'authors.field_of_study') // Ambil kolom tambahan dari authors
+            ->distinct()
             ->latest('users.created_at')
             ->take($perTableLimit)
             ->get()
@@ -76,9 +79,9 @@ class DashboardController extends Controller
                     'id' => $user->id,
                     'type' => 'user_registered',
                     'title' => 'Penulis baru mendaftar',
-                    'description' => "{$user->name} - {$user->institution}", // Asumsi ada field institution
+                    'description' => "{$user->name} - {$user->institution}",
                     'created_at' => $user->created_at,
-                    'link' => "/api/users/{$user->id}"
+                    'link' => "/admin/users/{$user->id}"
                 ];
             });
 
