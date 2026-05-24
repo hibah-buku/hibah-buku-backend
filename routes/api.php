@@ -32,6 +32,7 @@ Route::middleware('auth:api')->group(function () {
     Route::middleware('role:admin')->group(function () {
         // Dashboard
         Route::get('/dashboard', [DashboardController::class, 'index']);
+        Route::get('/dashboard/activities', [DashboardController::class, 'getActivities']);
 
         // Form Kesediaan
         Route::get('/willingness-forms', [WillingnessFormController::class, 'index']);

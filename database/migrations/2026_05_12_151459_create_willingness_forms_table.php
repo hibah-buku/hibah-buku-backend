@@ -53,6 +53,7 @@ return new class extends Migration
             $table->string('rejection_reason')->nullable();
             $table->timestamp('rejected_at')->nullable();
 
+            $table->index(['status', 'rejected_at', 'created_at']);
             $table->timestamps();
         });
     }
