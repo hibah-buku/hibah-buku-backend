@@ -317,15 +317,19 @@ class PublisherController extends Controller
         $template = NotificationTemplate::where('event_name', $eventName)->first();
 
         NotificationLog::create([
-            'template_id' => $template ? $template->id : 1,
-            'recipient_id' => $manuscript->author_id,
+            'notification_template_id' => $template ? $template->id : null,
+            'template_code' => $eventName,
             'recipient_email' => $manuscript->author->email ?? 'author@dummy.com',
             'event_name' => $eventName,
+            'recipient_name' => $manuscript->author->name ?? 'Penulis',
+            'notifiable_type' => 'App\Models\User',
+            'notifiable_id' => $manuscript->author_id,
+            'subject' => $eventName === 'PublisherApproved' ? 'Naskah Anda Disetujui' : 'Naskah Anda Perlu Direvisi',
+            'status' => 'sent',
             'payload' => json_encode([
-                'manuscript_id' => $manuscript->id, 
+                'manuscript_id' => $manuscript->id,
                 'notes' => $validated['revision_notes'] ?? null
             ]),
-            'status' => 'sent',
             'sent_at' => now(),
         ]);
 
