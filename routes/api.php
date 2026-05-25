@@ -8,6 +8,9 @@ use App\Http\Controllers\Api\ManuscriptController;
 use App\Http\Controllers\Api\DraftUploadController;
 use App\Http\Controllers\Api\ManuscriptDownloadController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\PublisherController;
+use App\Http\Controllers\Api\NotificationLogController;
+use App\Http\Controllers\Api\NotificationTemplateController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -15,7 +18,6 @@ use Illuminate\Support\Facades\Route;
 | API Routes
 |--------------------------------------------------------------------------
 */
-
 // Public Routes
 Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
@@ -33,7 +35,6 @@ Route::middleware('auth:api')->group(function () {
         // Dashboard
         Route::get('/dashboard', [DashboardController::class, 'index']);
         Route::get('/dashboard/activities', [DashboardController::class, 'getActivities']);
-
         // Form Kesediaan
         Route::get('/willingness-forms', [WillingnessFormController::class, 'index']);
         Route::patch('/willingness-forms/{id}/approve', [WillingnessFormController::class, 'approve']);
@@ -66,11 +67,18 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/manuscripts/{manuscript}/download', [ManuscriptDownloadController::class, 'download']);
     });
 
+    // Reviewer & Penerbit Placeholders
+    Route::middleware('role:reviewer')->group(function () {
+        Route::get('/reviews/pending', fn() => response()->json(['message' => 'Reviewer Endpoint']));
+    });
+    });
+
     Route::middleware('role:penerbit')->group(function () {
         Route::get('/publisher/checks', fn() => response()->json(['message' => 'Publisher Endpoint']));
         Route::get('/publisher/dashboard', [PublisherController::class, 'dashboard']);
     });
-
+    
+    // Notification templates & logs (Admin Only)
     Route::prefix('notification-templates')->group(function () {
         Route::get('/', [NotificationTemplateController::class, 'index']);
         Route::post('/', [NotificationTemplateController::class, 'store']);
@@ -84,4 +92,3 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/{id}', [NotificationLogController::class, 'show']);
         Route::delete('/{id}', [NotificationLogController::class, 'destroy']);
     });
-});
