@@ -19,11 +19,12 @@ class PublisherController extends Controller
      */
     public function dashboard(Request $request)
     {
-        $totalSubmissions = Manuscript::count();
-        $praCetak = Manuscript::where('status', 'preprint')->count();
-        $revisionRequests = Manuscript::where('status', 'publisher_revised')->count();
-        $approved = Manuscript::where('status', 'ready_to_print')->count();
-        $openDeadlines = Deadline::where('is_completed', false)->count();
+        try {
+            $totalSubmissions = Manuscript::count();
+            $praCetak = Manuscript::where('status', 'preprint')->count();
+            $revisionRequests = Manuscript::where('status', 'publisher_revised')->count();
+            $approved = Manuscript::where('status', 'ready_to_print')->count();
+            $openDeadlines = Deadline::where('is_completed', false)->count();
 
         $recentNotifications = NotificationLog::latest('sent_at')
             ->take(3)
@@ -37,18 +38,42 @@ class PublisherController extends Controller
                 ];
             });
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Data dashboard penerbit berhasil diambil.',
-            'data' => [
-                'total_submissions' => $totalSubmissions,
-                'pending_checks' => $praCetak,
-                'revision_requests' => $revisionRequests,
-                'approved_manuscripts' => $approved,
-                'open_deadlines' => $openDeadlines,
-                'recent_notifications' => $recentNotifications,
-            ]
-        ], 200);
+        $links = [
+                [
+                    'rel' => 'self',
+                    'href' => url('/api/publisher/dashboard'),
+                    'method' => 'GET',
+                    'description' => 'Memuat ulang data dashboard'
+                ],
+                [
+                    'rel' => 'manuscripts_list',
+                    'href' => url('/api/publisher/manuscripts'),
+                    'method' => 'GET',
+                    'description' => 'Melihat daftar naskah yang siap diperiksa di tahap pra-cetak'
+                ]
+            ];
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Dashboard penerbit ditampilkan.',
+                'data' => [
+                    'total_submissions' => $totalSubmissions,
+                    'pending_checks' => $praCetak,
+                    'revision_requests' => $revisionRequests,
+                    'approved_manuscripts' => $approved,
+                    'open_deadlines' => $openDeadlines,
+                    'recent_notifications' => $recentNotifications,
+                ],
+                '_links' => $links
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan sistem: ' . $e->getMessage(),
+                'data' => null
+            ], 500);
+        }
     }
 
     /**
@@ -57,16 +82,105 @@ class PublisherController extends Controller
      */
     public function index(Request $request)
     {
-        $manuscripts = Manuscript::with('author')
-            ->where('status', 'preprint')
-            ->orderBy('updated_at', 'desc')
-            ->paginate(10);
+        try {
+            $paginator = Manuscript::with('author')
+                ->where('status', 'preprint')
+                ->orderBy('updated_at', 'desc')
+                ->paginate(10);
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Daftar naskah pra-cetak.',
-            'data' => $manuscripts
-        ], 200);
+            $formattedItems = collect($paginator->items())->map(function ($manuscript) {
+                return [
+                    'id' => $manuscript->id,
+                    'title' => $manuscript->title,
+                    'author' => [
+                        'id' => $manuscript->author->id ?? null,
+                        'name' => $manuscript->author->name ?? 'N/A',
+                        'email' => $manuscript->author->email ?? 'N/A'
+                    ],
+                    'status' => $manuscript->status,
+                    'updated_at' => $manuscript->updated_at->toDateTimeString(),
+                    '_links' => [
+                        [
+                            'rel' => 'details',
+                            'href' => url("/api/publisher/manuscripts/{$manuscript->id}"),
+                            'method' => 'GET',
+                            'description' => 'Melihat detail dokumen administrasi dan melakukan checklist'
+                        ],
+                        [
+                            'rel' => 'submit_decision',
+                            'href' => url("/api/publisher/manuscripts/{$manuscript->id}/decision"),
+                            'method' => 'POST',
+                            'description' => 'Mengirim keputusan approved atau revised untuk naskah ini'
+                        ]
+                    ]
+                ];
+            });
+
+            // navigasi antar halaman (Pagination Links)
+            $paginationLinks = [
+                [
+                    'rel' => 'self',
+                    'href' => $paginator->url($paginator->currentPage()),
+                    'method' => 'GET'
+                ]
+            ];
+
+            if ($paginator->hasMorePages()) {
+                $paginationLinks[] = [
+                    'rel' => 'next',
+                    'href' => $paginator->nextPageUrl(),
+                    'method' => 'GET'
+                ];
+            }
+
+            if (!$paginator->onFirstPage()) {
+                $paginationLinks[] = [
+                    'rel' => 'prev',
+                    'href' => $paginator->previousPageUrl(),
+                    'method' => 'GET'
+                ];
+            }
+
+            $paginationLinks[] = [
+                'rel' => 'first',
+                'href' => $paginator->url(1),
+                'method' => 'GET'
+            ];
+
+            $paginationLinks[] = [
+                'rel' => 'last',
+                'href' => $paginator->url($paginator->lastPage()),
+                'method' => 'GET'
+            ];
+
+            $paginationLinks[] = [
+                'rel' => 'dashboard',
+                'href' => url('/api/publisher/dashboard'),
+                'method' => 'GET'
+            ];
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Daftar naskah pra-cetak berhasil dimuat.',
+                'data' => [
+                    'items' => $formattedItems,
+                    'meta' => [
+                        'current_page' => $paginator->currentPage(),
+                        'last_page' => $paginator->lastPage(),
+                        'per_page' => $paginator->perPage(),
+                        'total' => $paginator->total(),
+                    ]
+                ],
+                '_links' => $paginationLinks
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan sistem: ' . $e->getMessage(),
+                'data' => null
+            ], 500);
+        }
     }
 
     /**
@@ -75,21 +189,71 @@ class PublisherController extends Controller
      */
     public function show(string $id)
     {
-        $manuscript = Manuscript::with(['author', 'publisherChecks'])->find($id);
+        try {
+            $manuscript = Manuscript::with(['author', 'publisherChecks'])->find($id);
 
-        if (!$manuscript) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Naskah tidak ditemukan.',
-                'data' => null
-            ], 404);
-        }
+            if (!$manuscript) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Naskah tidak ditemukan.',
+                    'data' => null,
+                    '_links' => [
+                            [
+                                'rel' => 'list',
+                                'href' => url('/api/publisher/manuscripts'),
+                                'method' => 'GET'
+                            ],
+                            [
+                                'rel' => 'dashboard',
+                                'href' => url('/api/publisher/dashboard'),
+                                'method' => 'GET'
+                            ]
+                        ]
+                ], 404);
+            }
+            $links = [
+                [
+                    'rel' => 'self',
+                    'href' => url("/api/publisher/manuscripts/{$id}"),
+                    'method' => 'GET'
+                ],
+                [
+                    'rel' => 'list',
+                    'href' => url('/api/publisher/manuscripts'),
+                    'method' => 'GET'
+                ]
+            ];
+
+            if ($manuscript->status === 'preprint') {
+                $links[] = [
+                    'rel' => 'submit_decision',
+                    'href' => url("/api/publisher/manuscripts/{$id}/decision"),
+                    'method' => 'POST',
+                    'description' => 'Mengirim keputusan approved (siap cetak) atau revised (perlu revisi)'
+                ];
+            } else {
+                $links[] = [
+                    'rel' => 'status_history',
+                    'href' => url("/api/publisher/dashboard"), 
+                    'method' => 'GET',
+                    'description' => 'Naskah sudah diproses. Status saat ini: ' . $manuscript->status
+                ];
+            }
 
         return response()->json([
             'status' => 'success',
             'message' => 'Detail naskah berhasil diambil.',
-            'data' => $manuscript
+            'data' => $manuscript,
+            '_links' => $links
         ], 200);
+
+    } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan sistem: ' . $e->getMessage(),
+                'data' => null
+            ], 500);
+        }
     }
 
     /**
@@ -98,26 +262,35 @@ class PublisherController extends Controller
      */
     public function storeDecision(Request $request, string $id)
     {
-        $manuscript = Manuscript::with('author')->find($id);
+        try {
+            $manuscript = Manuscript::with('author')->find($id);
 
-        if (!$manuscript) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Naskah tidak ditemukan.',
-                'data' => null
-            ], 404);
-        }
+            if (!$manuscript) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Naskah tidak ditemukan.',
+                    'data' => null
+                ], 404);
+            }
 
-        $validator = Validator::make($request->all(), [
-            'decision' => 'required|string|in:approved,revised',
-            'revision_notes' => 'required_if:decision,revised|string|nullable',
-        ]);
+            $validator = Validator::make($request->all(), [
+                'decision' => 'required|string|in:approved,revised',
+                'revision_notes' => 'required_if:decision,revised|string|nullable',
+            ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Validasi gagal.',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
+                '_links' => [
+                    [
+                        'rel' => 'self',
+                        'href' => url("/api/publisher/manuscripts/{$id}"),
+                        'method' => 'GET',
+                        'description' => 'Kembali melihat detail naskah sebelum mencoba mengirim keputusan lagi'
+                    ]
+                ]
             ], 422);
         }
 
@@ -161,5 +334,13 @@ class PublisherController extends Controller
             'message' => 'Keputusan penerbit berhasil disimpan',
             'data' => $decision
         ], 201);
+    
+    } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan internal: ' . $e->getMessage(),
+                'data' => null
+            ], 500);
+        }
     }
 }

@@ -55,7 +55,7 @@ class ContractController extends Controller
                 ]
             );
 
-            return ApiResponse::success('Kontrak berhasil diunggah. Menunggu validasi admin', new ContractResource($contract), 200);
+            return ApiResponse::success('Kontrak berhasil diunggah. Menunggu validasi admin', new ContractResource($contract), 201);
         } catch (\Exception $e) {
             return ApiResponse::error('Gagal menggunggah file: ' . $e->getMessage(), 500);
         }
