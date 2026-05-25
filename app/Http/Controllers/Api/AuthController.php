@@ -19,12 +19,12 @@ class AuthController extends Controller
             return ApiResponse::error('Email atau password salah.', 401);
         }
 
-         $user = JWTAuth::user();
+        $user = JWTAuth::user();
 
         if ($user->status !== 'active') {
             JWTAuth::invalidate($token);
 
-           return ApiResponse::error('Akun Anda tidak aktif. Silakan hubungi admin.', 403);
+            return ApiResponse::error('Akun Anda tidak aktif. Silakan hubungi admin.', 403);
         }
 
         return ApiResponse::success('Login berhasil.', [
@@ -41,7 +41,7 @@ class AuthController extends Controller
             JWTAuth::invalidate(JWTAuth::getToken());
 
             return ApiResponse::success('Logout berhasil.', null, 200);
-        } catch (\Exception $e){
+        } catch (\Exception $e) {
             return ApiResponse::error('Gagal logout.', 500);
         }
     }
@@ -52,8 +52,10 @@ class AuthController extends Controller
     public function me()
     {
         $user = JWTAuth::user();
-        return ApiResponse::success('Profil pengguna.',
-        new UserResource($user),
-        200);
+        return ApiResponse::success(
+            'Profil pengguna.',
+            new UserResource($user),
+            200
+        );
     }
 }

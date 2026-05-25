@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\ContractController;
 use App\Http\Controllers\Api\ManuscriptController;
 use App\Http\Controllers\Api\DraftUploadController;
 use App\Http\Controllers\Api\ManuscriptDownloadController;
+use App\Http\Controllers\Api\AuthorDocumentController;
 use App\Http\Controllers\Api\DashboardController;
 use Illuminate\Support\Facades\Route;
 
@@ -62,8 +63,13 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/manuscripts/upload-draft', [DraftUploadController::class, 'uploadDraft']);
         Route::get('/manuscripts/{manuscript}', [ManuscriptController::class, 'show']);
         Route::post('/manuscripts/{manuscript}/upload-revision', [DraftUploadController::class, 'uploadRevision']);
-        Route::get('own/manuscripts/{manuscript}/status', [ManuscriptController::class, 'status']);
+        Route::get('/manuscripts/{manuscript}/status', [ManuscriptController::class, 'status']);
         Route::get('/manuscripts/{manuscript}/download', [ManuscriptDownloadController::class, 'download']);
+
+        // Dokumen Administrasi Penulis (Author Documents)
+        Route::get('/manuscripts/me/documents', [AuthorDocumentController::class, 'index']);
+        Route::post('/manuscripts/me/documents', [AuthorDocumentController::class, 'upload']);
+        Route::delete('/manuscripts/me/documents/{document_type}', [AuthorDocumentController::class, 'destroy']);
     });
 
     // Reviewer & Penerbit Placeholders
