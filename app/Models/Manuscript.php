@@ -35,6 +35,9 @@ class Manuscript extends Model
     const STATUS_REVISION_NEEDED = 'revision_needed';
     const STATUS_REVISION_UPLOADED = 'revision_uploaded';
     const STATUS_APPROVED = 'approved';
+    const STATUS_PREPRINT = 'preprint';
+    const STATUS_PUBLISHER_REVISED = 'publisher_revised';
+    const STATUS_TO_PRINT = 'to_print';
     const STATUS_PUBLISHED = 'published';
 
     /**
@@ -47,6 +50,9 @@ class Manuscript extends Model
         self::STATUS_REVISION_NEEDED,
         self::STATUS_REVISION_UPLOADED,
         self::STATUS_APPROVED,
+        self::STATUS_PREPRINT,
+        self::STATUS_PUBLISHER_REVISED,
+        self::STATUS_TO_PRINT,
         self::STATUS_PUBLISHED,
     ];
 
@@ -60,6 +66,9 @@ class Manuscript extends Model
         self::STATUS_REVISION_NEEDED => 'Perlu Revisi',
         self::STATUS_REVISION_UPLOADED => 'Revisi Telah Diunggah',
         self::STATUS_APPROVED => 'Naskah Disetujui',
+        self::STATUS_PREPRINT => 'Pra-Cetak (Penerbit)',
+        self::STATUS_PUBLISHER_REVISED => 'Revisi dari Penerbit',
+        self::STATUS_TO_PRINT => 'Siap Cetak',
         self::STATUS_PUBLISHED => 'Telah Diterbitkan',
     ];
 
