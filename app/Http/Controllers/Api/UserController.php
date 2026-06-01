@@ -31,6 +31,14 @@ class UserController extends Controller
             });
         }
 
+        if ($request->has('search') && $request->search != '') {
+            $searchTerm = $request->search;
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('name', 'like', "%{$searchTerm}%")
+                  ->orWhere('email', 'like', "%{$searchTerm}%");
+            });
+        }
+
         $users = $query->orderBy('created_at', 'desc')->paginate(10);
 
         return ApiResponse::success(

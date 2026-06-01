@@ -206,25 +206,49 @@ class ManuscriptController extends Controller
             ],
             [
                 'order' => 5,
+                'key' => 'preprint',
+                'title' => 'Pra-Cetak Penerbit',
+                'description' => 'Naskah masuk ke tahap layouting dan pra-cetak oleh pihak Penerbit.',
+                'icon' => 'upcoming',
+            ],
+            [
+                'order' => 6,
+                'key' => 'publisher_revised',
+                'title' => 'Revisi Penerbit',
+                'description' => 'Pemberian catatan perbaikan visual/layout dari pihak Penerbit.',
+                'icon' => 'rate_review',
+            ],
+            [
+                'order' => 7,
+                'key' => 'to_print',
+                'title' => 'Siap Cetak',
+                'description' => 'Penerbit menyetujui layout akhir. Naskah siap masuk antrean cetak.',
+                'icon' => 'check_circle',
+            ],
+            [
+                'order' => 8,
                 'key' => 'published',
-                'title' => 'Pra-Cetak / Terbit',
-                'description' => 'Naskah masuk ke tahap layouting serta persiapan pencetakan.',
+                'title' => 'Telah Diterbitkan',
+                'description' => 'Buku fisik dan elektronik resmi diterbitkan.',
                 'icon' => 'print',
             ],
         ];
 
         // Determine current step index based on manuscript status
         $statusOrder = [
-            'initial_draft_requested' => 0,
-            'draft_uploaded' => 1,
+            'initial_draft_requested' => 1,
+            'draft_uploaded' => 2,
             'under_review' => 2,
             'revision_needed' => 3,
             'revision_uploaded' => 2, // Goes back to review cycle
             'approved' => 4,
-            'published' => 5,
+            'preprint' => 5,
+            'publisher_revised' => 6,
+            'to_print' => 7,
+            'published' => 8,
         ];
 
-        $currentIndex = $statusOrder[$manuscript->status] ?? 0;
+        $currentIndex = $statusOrder[$manuscript->status] ?? 1;
 
         // Build steps with status
         return array_map(function ($step) use ($currentIndex, $statusLogs) {
@@ -253,23 +277,30 @@ class ManuscriptController extends Controller
     private function buildDashboardTimeline(Manuscript $manuscript): array
     {
         $statusOrder = [
-            'initial_draft_requested' => 0,
-            'draft_uploaded' => 1,
+            'initial_draft_requested' => 1,
+            'draft_uploaded' => 2,
             'under_review' => 2,
             'revision_needed' => 3,
             'revision_uploaded' => 2,
             'approved' => 4,
-            'published' => 5,
+            'preprint' => 5,
+            'publisher_revised' => 6,
+            'to_print' => 7,
+            'published' => 8,
         ];
 
-        $currentIndex = $statusOrder[$manuscript->status] ?? 0;
+        $currentIndex = $statusOrder[$manuscript->status] ?? 1;
 
         $steps = [
             ['order' => 0, 'title' => 'Pendaftaran Hibah', 'description' => 'Disetujui oleh admin.'],
             ['order' => 1, 'title' => 'Pengumpulan Draft Awal', 'description' => 'Batas akhir: ' . ($manuscript->deadline_draft?->format('d M Y') ?? 'Belum ditentukan')],
             ['order' => 2, 'title' => 'Proses Review', 'description' => 'Reviewer mengevaluasi naskah.'],
             ['order' => 3, 'title' => 'Revisi Naskah', 'description' => 'Menunggu hasil review.'],
-            ['order' => 4, 'title' => 'Penerbitan', 'description' => 'Naskah siap diterbitkan.'],
+            ['order' => 4, 'title' => 'Naskah Disetujui', 'description' => 'Siap masuk tahap pra-cetak.'],
+            ['order' => 5, 'title' => 'Pra-Cetak Penerbit', 'description' => 'Naskah diproses oleh Penerbit.'],
+            ['order' => 6, 'title' => 'Revisi Penerbit', 'description' => 'Pemberian masukan dari Penerbit.'],
+            ['order' => 7, 'title' => 'Siap Cetak', 'description' => 'Persetujuan cetak diterbitkan.'],
+            ['order' => 8, 'title' => 'Telah Terbit', 'description' => 'Buku berhasil diterbitkan.'],
         ];
 
         return array_map(function ($step) use ($currentIndex) {
