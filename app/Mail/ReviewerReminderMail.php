@@ -10,7 +10,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class ReviewerAssignedMail extends Mailable
+class ReviewerReminderMail extends Mailable
 {
     use Queueable, SerializesModels;
 
@@ -30,7 +30,7 @@ class ReviewerAssignedMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Tugas Review Naskah: ' . $this->assignment->book_title,
+            subject: 'Reminder (H-3): Batas Waktu Review Naskah ' . $this->assignment->book_title,
         );
     }
 
@@ -40,7 +40,7 @@ class ReviewerAssignedMail extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'emails.reviewer_assigned',
+            view: 'emails.reviewer_reminder',
         );
     }
 

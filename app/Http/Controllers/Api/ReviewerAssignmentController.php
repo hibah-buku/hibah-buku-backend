@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
+use App\Mail\ReviewerAssignedMail;
 use App\Models\Manuscript;
 use App\Models\Reviewer;
 use App\Models\ReviewerAssignment;
@@ -89,6 +90,12 @@ class ReviewerAssignmentController extends Controller
                     'notes' => 'Reviewer ditugaskan untuk naskah.',
                 ]);
             }
+        }
+
+        try {
+            Mail::to($reviewer->email)->send(new ReviewerAssignedMail($assignment));
+        } catch (\Exception $e) {
+            \Log::error('Gagal mengirim email penugasan ke ' . $reviewer->email . ': ' . $e->getMessage());
         }
 
         return ApiResponse::success('Assignment berhasil dibuat.', $assignment->fresh(), 201);

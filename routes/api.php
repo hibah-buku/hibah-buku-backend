@@ -88,11 +88,21 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/assignments/{assignment}', [ReviewerAssignmentController::class, 'show']);
         Route::get('/assignments/{assignment}/preview', [ReviewerAssignmentController::class, 'preview']);
         Route::post('/assignments/{assignment}/reviews', [ReviewerAssignmentController::class, 'submitReview']);
-        Route::get('/assignments/{assignment}/results', [ReviewerAssignmentController::class, 'results']);
         Route::get('/rubrics', [ReviewRubricController::class, 'index']);
     });
 
     Route::middleware('role:penerbit')->group(function () {
         Route::get('/publisher/checks', fn() => response()->json(['message' => 'Publisher Endpoint']));
     });
+});
+
+Route::get('/test-mail', function () {
+    try {
+        \Illuminate\Support\Facades\Mail::raw('Ini adalah email pengujian dari sistem.', function($msg) { 
+            $msg->to('test@example.com')->subject('Email Pengujian Mailtrap'); 
+        });
+        return \App\Helpers\ApiResponse::success('Email berhasil dikirim ke Mailtrap!');
+    } catch (\Exception $e) {
+        return \App\Helpers\ApiResponse::error('Gagal mengirim email: ' . $e->getMessage(), 500);
+    }
 });
