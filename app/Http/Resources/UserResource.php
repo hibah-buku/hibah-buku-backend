@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Models\Reviewer;
 
 class UserResource extends JsonResource
 {
@@ -14,13 +15,22 @@ class UserResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        return [
+        $data = [
             'id' => $this->id,
             'name' => $this->name,
             'email' => $this->email,
             'role' => $this->role?->name,
             '_links' => $this->links($request),
         ];
+
+        if ($this->role?->name === 'reviewer') {
+            $reviewer = Reviewer::where('user_id', $this->id)->first();
+            if ($reviewer) {
+                $data['reviewer_id'] = $reviewer->id;
+            }
+        }
+
+        return $data;
     }
 
      private function links(Request $request): array
@@ -77,26 +87,26 @@ class UserResource extends JsonResource
                 ];
             }
         } elseif ($role === 'reviewer') { // Tugas kelompok lain, tolong dilengkapi ya
+            $reviewerId = $this->id;
+            $reviewer = Reviewer::where('user_id', $this->id)->first();
+            if ($reviewer) {
+                $reviewerId = $reviewer->id;
+            }
+            $links['assignments'] = [
+                'message' => 'Daftar tugas review untuk reviewer',
+                'href' => "/api/reviewers/{$reviewerId}/assignments",
+                'method' => 'GET'
+            ];
+            $links['rubrics'] = [
+                'message' => 'Daftar rubrik penilaian review',
+                'href' => '/api/rubrics',
+                'method' => 'GET'
+            ];
+        } elseif ($role === 'penerbit') { // Tugas kelompok lain, tolong dilengkapi ya
             $links['lorem'] = [
                 'message' => 'lorem ipsum dolor sit amet',
                 'href' => '/api/lorem',
                 'method' =>  'GET'
-            ];
-        } elseif ($role === 'penerbit') {
-            $links['publisher_dashboard'] = [
-                'message' => 'Pantau naskah pra-cetak.',
-                'href' => '/api/publisher/dashboard',
-                'method' => 'GET',
-            ];
-            $links['publisher_manuscripts'] = [
-                'message' => 'Daftar naskah pra-cetak untuk ditinjau.',
-                'href' => '/api/publisher/manuscripts',
-                'method' => 'GET',
-            ];
-            $links['publisher_decision'] = [
-                'message' => 'Buat keputusan penerbitan naskah.',
-                'href' => '/api/publisher/manuscripts/{manuscript_id}/decision',
-                'method' => 'POST',
             ];
         }
 

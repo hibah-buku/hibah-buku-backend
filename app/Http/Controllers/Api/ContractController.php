@@ -12,14 +12,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use App\Helpers\ApiResponse;
 use Illuminate\Support\Facades\Storage;
-use App\Services\NotificationService;
 
 class ContractController extends Controller
 {
-    public function __construct(protected NotificationService $notificationService)
-    {
-    }
-
     /**
      * UC-04: Penulis Upload Kontrak
      * Endpoint: POST /api/contracts
@@ -101,31 +96,12 @@ class ContractController extends Controller
     public function validateContract(Request $request, Contract $contract)
     {
         $user = Auth::user();
-        
-        // Set deadline draft upload 1 minggu dari sekarang
-        $draftDeadline = now()->addWeek();
-        
         $contract->update([
             'status' => 'contract_validated',
             'notes' => $request->input('notes', 'Kontrak divalidasi oleh admin'),
             'validated_by' => $user->id,
             'validated_at' => now(),
-            'draft_deadline' => $draftDeadline,
         ]);
-
-        // Kirim email notifikasi ke penulis
-        if ($contract->author && $contract->author->user) {
-            $authorEmail = $contract->author->user->email;
-            $authorName = $contract->author->user->name;
-            $uploadUrl = url('/api/manuscripts/upload-draft');
-            
-            $this->notificationService->sendContractValidated(
-                $authorEmail,
-                $authorName,
-                $draftDeadline->format('d F Y H:i'),
-                $uploadUrl
-            );
-        }
 
         return ApiResponse::success(
             'Kontrak telah divalidasi. penulis dapat melanjutkan ke upload naskah.',

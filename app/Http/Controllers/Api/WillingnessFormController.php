@@ -16,14 +16,9 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use App\Services\NotificationService;
 
 class WillingnessFormController extends Controller
 {
-    public function __construct(protected NotificationService $notificationService)
-    {
-    }
-
     /**
      * UC-02: Submit Form Kesediaan Penulis
      * Endpoint: POST /api/auth/register-willingness
@@ -167,14 +162,6 @@ class WillingnessFormController extends Controller
             ]);
 
             DB::commit();
-
-            // Kirim notifikasi email login credentials ke penulis
-            $this->notificationService->sendAccountCreated(
-                $form->main_author_email,
-                $form->main_author_name,
-                $randomPassword,
-                url('/login')
-            );
 
             $form->setAttribute('linked_user_id', $user->id);
             $form->setAttribute('temporary_password', $randomPassword); // Hanya untuk response admin

@@ -71,10 +71,10 @@ class User extends Authenticatable implements JWTSubject
     }
 
     // Relasi: User (Reviewer) bisa ditugaskan di banyak assignments (Kelompok 3)
-    // public function reviewerAssignments()
-    // {
-    //     return $this->hasMany(ReviewerAssignment::class, 'reviewer_id');
-    // }
+    public function reviewerAssignments()
+    {
+        return $this->hasMany(ReviewerAssignment::class, 'reviewer_id');
+    }
 
     /**
      * Get the attributes that should be cast.
