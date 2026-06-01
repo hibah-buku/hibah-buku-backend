@@ -15,7 +15,6 @@ abstract class BaseNotificationMail extends Mailable
     use Queueable, SerializesModels;
 
     protected string $templateCode;
-    protected array $viewData;
     protected ?object $notifiable;
 
     public function __construct(array $viewData = [], ?object $notifiable = null)

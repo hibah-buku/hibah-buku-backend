@@ -62,8 +62,8 @@ Route::middleware('auth:api')->group(function () {
     Route::middleware('role:penerbit')->group(function () {
         Route::get('/publisher/dashboard', [PublisherController::class, 'dashboard']);
         Route::get('/publisher/manuscripts', [PublisherController::class, 'index']);
-        Route::get('/publisher/manuscripts/{id}', [PublisherController::class, 'show']);
-        Route::post('/publisher/manuscripts/{id}/decision', [PublisherController::class, 'storeDecision']);
+        Route::get('/publisher/manuscripts/{manuscripts}', [PublisherController::class, 'show']);
+        Route::post('/publisher/manuscripts/{manuscripts}/decision', [PublisherController::class, 'storeDecision']);
     });
 
     // Notification templates & logs

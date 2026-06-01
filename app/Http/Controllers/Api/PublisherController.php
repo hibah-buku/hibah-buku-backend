@@ -7,12 +7,16 @@ use Illuminate\Http\Request;
 use App\Models\Manuscript; 
 use App\Models\PublisherDecision; 
 use App\Models\NotificationLog;
-use App\Models\NotificationTemplate;
 use App\Models\Deadline;
+use App\Services\NotificationService;
 use Illuminate\Support\Facades\Validator;
 
 class PublisherController extends Controller
 {
+    public function __construct(protected NotificationService $notificationService)
+    {
+    }
+
     /**
      * GET /api/publisher/dashboard
      * Ringkasan naskah pra-cetak, revised, approved
@@ -20,11 +24,9 @@ class PublisherController extends Controller
     public function dashboard(Request $request)
     {
         try {
-            $totalSubmissions = Manuscript::count();
             $praCetak = Manuscript::where('status', 'preprint')->count();
             $revisionRequests = Manuscript::where('status', 'publisher_revised')->count();
-            $approved = Manuscript::where('status', 'ready_to_print')->count();
-            $openDeadlines = Deadline::where('is_completed', false)->count();
+            $approved = Manuscript::where('status', 'to_print')->count();
 
         $recentNotifications = NotificationLog::latest('sent_at')
             ->take(3)
@@ -57,11 +59,9 @@ class PublisherController extends Controller
                 'status' => 'success',
                 'message' => 'Dashboard penerbit ditampilkan.',
                 'data' => [
-                    'total_submissions' => $totalSubmissions,
                     'pending_checks' => $praCetak,
                     'revision_requests' => $revisionRequests,
                     'approved_manuscripts' => $approved,
-                    'open_deadlines' => $openDeadlines,
                     'recent_notifications' => $recentNotifications,
                 ],
                 '_links' => $links
@@ -84,7 +84,6 @@ class PublisherController extends Controller
     {
         try {
             $paginator = Manuscript::with('author')
-                ->where('status', 'preprint')
                 ->orderBy('updated_at', 'desc')
                 ->paginate(10);
 
@@ -92,13 +91,16 @@ class PublisherController extends Controller
                 return [
                     'id' => $manuscript->id,
                     'title' => $manuscript->title,
+                    
                     'author' => [
-                        'id' => $manuscript->author->id ?? null,
-                        'name' => $manuscript->author->name ?? 'N/A',
-                        'email' => $manuscript->author->email ?? 'N/A'
+                        'id' => $manuscript->author?->id,
+                        'name' => $manuscript->author?->name ?? 'N/A',
+                        'email' => $manuscript->author?->email ?? 'N/A'
                     ],
-                    'status' => $manuscript->status,
-                    'updated_at' => $manuscript->updated_at->toDateTimeString(),
+                    
+                    'status' => $manuscript->status,                    
+                    'updated_at' => $manuscript->updated_at ? $manuscript->updated_at->toDateTimeString() : null,
+                    
                     '_links' => [
                         [
                             'rel' => 'details',
@@ -114,7 +116,7 @@ class PublisherController extends Controller
                         ]
                     ]
                 ];
-            });
+            })->toArray();
 
             // navigasi antar halaman (Pagination Links)
             $paginationLinks = [
@@ -314,24 +316,20 @@ class PublisherController extends Controller
         }
         $manuscript->save();
 
-        $template = NotificationTemplate::where('event_name', $eventName)->first();
+        $authorEmail = $manuscript->author->email ?? null;
+        $authorName = $manuscript->author->name ?? 'Penulis';
+        $actionUrl = url("/api/manuscripts/{$manuscript->id}");
 
-        NotificationLog::create([
-            'notification_template_id' => $template ? $template->id : null,
-            'template_code' => $eventName,
-            'recipient_email' => $manuscript->author->email ?? 'author@dummy.com',
-            'event_name' => $eventName,
-            'recipient_name' => $manuscript->author->name ?? 'Penulis',
-            'notifiable_type' => 'App\Models\User',
-            'notifiable_id' => $manuscript->author_id,
-            'subject' => $eventName === 'PublisherApproved' ? 'Naskah Anda Disetujui' : 'Naskah Anda Perlu Direvisi',
-            'status' => 'sent',
-            'payload' => json_encode([
-                'manuscript_id' => $manuscript->id,
-                'notes' => $validated['revision_notes'] ?? null
-            ]),
-            'sent_at' => now(),
-        ]);
+        if ($authorEmail) {
+            $this->notificationService->sendPublisherDecision(
+                $authorEmail,
+                $authorName,
+                $manuscript->title,
+                $validated['decision'],
+                $validated['revision_notes'] ?? '',
+                $actionUrl,
+            );
+        }
 
         return response()->json([
             'status' => 'success',
