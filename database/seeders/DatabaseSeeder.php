@@ -19,7 +19,6 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             RoleAndAdminSeeder::class,
-            PublisherDashboardSeeder::class,
         ]);
 
         // Tambahkan pengguna uji tambahan jika diperlukan.

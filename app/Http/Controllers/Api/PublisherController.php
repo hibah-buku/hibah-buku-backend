@@ -308,7 +308,7 @@ class PublisherController extends Controller
 
         $eventName = '';
         if ($validated['decision'] === 'approved') {
-            $manuscript->status = 'ready_to_print'; 
+            $manuscript->status = 'to_print'; 
             $eventName = 'PublisherApproved';
         } else {
             $manuscript->status = 'publisher_revised'; 

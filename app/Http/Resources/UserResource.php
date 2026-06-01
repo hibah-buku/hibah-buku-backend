@@ -82,11 +82,21 @@ class UserResource extends JsonResource
                 'href' => '/api/lorem',
                 'method' =>  'GET'
             ];
-        } elseif ($role === 'penerbit') { // Tugas kelompok lain, tolong dilengkapi ya
-            $links['lorem'] = [
-                'message' => 'lorem ipsum dolor sit amet',
-                'href' => '/api/lorem',
-                'method' =>  'GET'
+        } elseif ($role === 'penerbit') {
+            $links['publisher_dashboard'] = [
+                'message' => 'Pantau naskah pra-cetak.',
+                'href' => '/api/publisher/dashboard',
+                'method' => 'GET',
+            ];
+            $links['publisher_manuscripts'] = [
+                'message' => 'Daftar naskah pra-cetak untuk ditinjau.',
+                'href' => '/api/publisher/manuscripts',
+                'method' => 'GET',
+            ];
+            $links['publisher_decision'] = [
+                'message' => 'Buat keputusan penerbitan naskah.',
+                'href' => '/api/publisher/manuscripts/{manuscript_id}/decision',
+                'method' => 'POST',
             ];
         }
 

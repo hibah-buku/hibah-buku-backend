@@ -2,6 +2,8 @@
 
 namespace App\Mail;
 
+use Illuminate\Mail\Mailables\Content;
+
 /**
  * Dikirim ke penulis setelah penerbit memberi keputusan.
  * Vars: name, book_title, decision (approved|revised), notes, action_url
@@ -9,6 +11,14 @@ namespace App\Mail;
 class PublisherDecisionMail extends BaseNotificationMail
 {
     protected string $templateCode = 'publisher_decision';
+
+    public function content(): Content
+    {
+        return new Content(
+            view: $this->defaultView(),
+            with: $this->viewData
+        );
+    }
 
     protected function defaultSubject(): string
     {
