@@ -164,7 +164,7 @@ class UserController extends Controller
             'name' => 'sometimes|string|max:255',
             'email' => 'sometimes|email|unique:users,email,' . $user->id,
             'status' => 'sometimes|in:active,inactive',
-            'role_name' => 'sometimes|in:reviewer,penerbit,admin,penulis',
+            'role_name' => 'sometimes|in:reviewer,penerbit,admin',
             'password' => 'sometimes|string|min:6',
         ]);
 
