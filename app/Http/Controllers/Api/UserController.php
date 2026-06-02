@@ -132,7 +132,9 @@ class UserController extends Controller
      */
     public function show(string $id)
     {
-        $user = User::with('role')->find($id);
+        $user = User::withTrashed()
+            ->with('role')
+            ->find($id);
 
         if (!$user) {
             return ApiResponse::error('Pengguna tidak ditemukan.', 404);
