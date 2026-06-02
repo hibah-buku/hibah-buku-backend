@@ -84,10 +84,8 @@ class WillingnessFormController extends Controller
     {
         $query = WillingnessForm::query();
 
-        if ($request->has('status')) {
-                $query->where('status', $request->status);
-        } else {
-            $query->where('status', 'pending'); // Default tetap pending
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
         }
 
         if ($request->has('search')) {
@@ -205,6 +203,23 @@ class WillingnessFormController extends Controller
         return ApiResponse::success(
             'Form ditolak.',
             new WillingnessFormResource($form->fresh())
+        );
+    }
+
+    public function show($id)
+    {
+        $form = WillingnessForm::find($id);
+
+        if (!$form) {
+            return ApiResponse::error(
+                'Form tidak ditemukan.',
+                404
+            );
+        }
+
+        return ApiResponse::success(
+            'Detail form kesediaan.',
+            new WillingnessFormResource($form)
         );
     }
 }
