@@ -17,6 +17,8 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use App\Services\NotificationService;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\Log;
 
 class WillingnessFormController extends Controller
 {
@@ -28,8 +30,9 @@ class WillingnessFormController extends Controller
      * UC-02: Submit Form Kesediaan Penulis
      * Endpoint: POST /api/auth/register-willingness
      */
-    public function store(Request $request)
+    public function store(Request $request, NotificationService $notificationService)
     {
+
          // Validasi Input Sesuai ERD & Requirement Min 2 Penulis
         $validator = Validator::make($request->all(), [
             // Main Author
@@ -77,6 +80,23 @@ class WillingnessFormController extends Controller
 
         $form = WillingnessForm::create($validator->validated());
 
+
+        try {
+            $reviewUrl = 'http://localhost:5173/admin/willingness-form/' . $form->id;
+
+            $notificationService->sendNewWillingnessFormToAdmins(
+                formId: $form->id,
+                authorName: $form->main_author_name,
+                bookTitle: $form->book_title,
+                createdAt: $form->created_at ? $form->created_at->format('Y-m-d H:i:s') : now()->format('Y-m-d H:i:s'),
+                reviewUrl: $reviewUrl
+            );
+        } catch (\Throwable $e) {
+            Log::error('Failed to send admin notification for new willingness form', [
+                'form_id' => $form->id,
+                'error' => $e->getMessage()
+            ]);
+        }
         // Return Response Standar
         return ApiResponse::success(
             'Form kesediaan berhasil dikirim. Menunggu verifikasi admin.',
