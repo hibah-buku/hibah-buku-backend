@@ -13,6 +13,9 @@ use App\Mail\ReviewerAssignedMail;
 use App\Mail\ReviewReminderMail;
 use App\Mail\WillingnessRejectedMail;
 use App\Models\NotificationLog;
+use App\Mail\NewWillingnessFormAdminNotification;
+use App\Models\User;
+use App\Models\Role;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
@@ -47,6 +50,40 @@ class NotificationService
     // ──────────────────────────────────────────────
     // Convenience methods per notification type
     // ──────────────────────────────────────────────
+
+    public function sendNewWillingnessFormToAdmins(
+        int $formId,
+        string $authorName,
+        string $bookTitle,
+        string $createdAt,
+        string $reviewUrl
+    ): array {
+
+        $adminRole = Role::where('name', 'admin')->first();
+        $admins = User::where('role_id', $adminRole->id)->get();
+
+        if (!$createdAt) {
+            $createdAt = now()->format('Y-m-d H:i:s');
+        }
+
+        $results = [];
+
+        foreach ($admins as $admin) {
+            $results[] = $this->send(
+                new NewWillingnessFormAdminNotification([
+                    'form_id'       => $formId,
+                    'author_name'   => $authorName,
+                    'book_title'    => $bookTitle,
+                    'submitted_at'  => $createdAt,
+                    'review_url'    => $reviewUrl,
+                ]),
+                $admin->email,
+                $admin->name
+            );
+        }
+
+        return $results;
+    }
 
     public function sendAccountCreated(
         string $email, string $name, string $password, string $loginUrl
