@@ -11,6 +11,7 @@ use App\Mail\PublisherDecisionMail;
 use App\Mail\ReviewCompletedMail;
 use App\Mail\ReviewerAssignedMail;
 use App\Mail\ReviewReminderMail;
+use App\Mail\WillingnessRejectedMail;
 use App\Models\NotificationLog;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -52,6 +53,18 @@ class NotificationService
     ): NotificationLog {
         return $this->send(
             new AccountCreatedMail(compact('name', 'email', 'password') + ['login_url' => $loginUrl]),
+            $email, $name
+        );
+    }
+
+    public function sendWillingnessRejected(
+        string $email, string $name, ?string $rejectionReason = null
+    ): NotificationLog {
+        return $this->send(
+            new WillingnessRejectedMail([
+                'name' => $name,
+                'rejection_reason' => $rejectionReason,
+            ]),
             $email, $name
         );
     }

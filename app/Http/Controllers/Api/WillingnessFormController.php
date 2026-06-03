@@ -91,8 +91,6 @@ class WillingnessFormController extends Controller
 
         if ($request->has('status')) {
                 $query->where('status', $request->status);
-        } else {
-            $query->where('status', 'pending'); // Default tetap pending
         }
 
         if ($request->has('search')) {
@@ -214,6 +212,12 @@ class WillingnessFormController extends Controller
             'rejection_reason' => $request->rejection_reason,
             'rejected_at'      => now(),
         ]);
+
+        $this->notificationService->sendWillingnessRejected(
+            $form->main_author_email,
+            $form->main_author_name,
+            $request->rejection_reason
+        );
 
         return ApiResponse::success(
             'Form ditolak.',
