@@ -14,6 +14,8 @@ use App\Mail\ReviewReminderMail;
 use App\Mail\WillingnessRejectedMail;
 use App\Models\NotificationLog;
 use App\Mail\NewWillingnessFormAdminNotification;
+use App\Mail\NewContractUploadNotification;
+use App\Mail\ContractRejectedMail;
 use App\Models\User;
 use App\Models\Role;
 use Illuminate\Support\Facades\Log;
@@ -106,12 +108,69 @@ class NotificationService
         );
     }
 
+    public function sendNewContractUploadToAdmins(
+        int $contractId,
+        string $authorName,
+        string $bookTitle,
+        string $fileName,
+        string $uploadedAt,
+        string $reviewUrl
+    ) : array {
+        $adminRole = Role::where('name', 'admin')->first();
+        $admins = User::where('role_id', $adminRole->id)->get();
+
+        if (!$uploadedAt) {
+            $uploadedAt = now()->format('Y-m-d H:i:s');
+        }
+
+        $result = [];
+
+        foreach ($admins as $admin) {
+            $result[] = $this->send(
+                new NewContractUploadNotification([
+                    'contract_id'  => $contractId,
+                    'author_name'  => $authorName,
+                    'book_title'   => $bookTitle,
+                    'file_name'    => $fileName,
+                    'uploaded_at'  => $uploadedAt,
+                    'review_url'   => $reviewUrl,
+                ]),
+                $admin->email,
+                $admin->name
+            );
+        }
+
+        return $result;
+    }
+
     public function sendContractValidated(
-        string $email, string $name, string $deadlineUpload, string $uploadUrl
+        string $email,
+        string $name,
+        string $deadlineUpload,
+        string $uploadUrl
     ): NotificationLog {
         return $this->send(
             new ContractValidatedMail(['name' => $name, 'deadline_upload' => $deadlineUpload, 'upload_url' => $uploadUrl]),
             $email, $name
+        );
+    }
+
+    public function sendContractRejected(
+        string $email,
+        string $authorName,
+        string $bookTitle,
+        ?string $rejectionReason,
+        string $resubmitUrl,
+    ): NotificationLog {
+        return $this->send(
+            new ContractRejectedMail([
+                'name'             => $authorName,
+                'book_title'       => $bookTitle,
+                'rejection_reason' => $rejectionReason,
+                'resubmit_url'     => $resubmitUrl,
+            ]),
+            $email,
+            $authorName
         );
     }
 
