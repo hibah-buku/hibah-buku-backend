@@ -31,7 +31,7 @@
 
 <div style="text-align: center; margin: 30px 0;">
     <a href="{{ $review_url }}"
-       style="display: inline-block; background-color: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+       class="btn">
         Review Formulir
     </a>
 </div>

@@ -30,7 +30,7 @@ class WillingnessFormController extends Controller
      * UC-02: Submit Form Kesediaan Penulis
      * Endpoint: POST /api/auth/register-willingness
      */
-    public function store(Request $request, NotificationService $notificationService)
+    public function store(Request $request)
     {
 
          // Validasi Input Sesuai ERD & Requirement Min 2 Penulis
@@ -84,7 +84,7 @@ class WillingnessFormController extends Controller
         try {
             $reviewUrl = 'http://localhost:5173/admin/willingness-form/' . $form->id;
 
-            $notificationService->sendNewWillingnessFormToAdmins(
+            $this->notificationService->sendNewWillingnessFormToAdmins(
                 formId: $form->id,
                 authorName: $form->main_author_name,
                 bookTitle: $form->book_title,
@@ -187,12 +187,19 @@ class WillingnessFormController extends Controller
             DB::commit();
 
             // Kirim notifikasi email login credentials ke penulis
-            $this->notificationService->sendAccountCreated(
-                $form->main_author_email,
-                $form->main_author_name,
-                $randomPassword,
-                url('/login')
-            );
+            try {
+                $this->notificationService->sendAccountCreated(
+                    $form->main_author_email,
+                    $form->main_author_name,
+                    $randomPassword,
+                    url('/login')
+                );
+            } catch (\Throwable $e) {
+                Log::error('Failed to send admin notification for new willingness form', [
+                    'form_id' => $form->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
 
             $form->setAttribute('linked_user_id', $user->id);
             $form->setAttribute('temporary_password', $randomPassword); // Hanya untuk response admin
