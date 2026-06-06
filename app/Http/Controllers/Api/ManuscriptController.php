@@ -128,6 +128,12 @@ class ManuscriptController extends Controller
     {
         $user = Auth::user();
 
+        // Get willingness form for book info
+        $willingnessForm = WillingnessForm::where('main_author_email', $user->email)
+            ->where('status', 'approved')
+            ->latest()
+            ->first();
+
         $manuscript = Manuscript::where('user_id', $user->id)
             ->with(['bookMetadata', 'latestFile', 'contract'])
             ->latest()
@@ -137,14 +143,9 @@ class ManuscriptController extends Controller
             return ApiResponse::success('Dashboard penulis.', [
                 'has_manuscript' => false,
                 'message' => 'Anda belum memiliki naskah.',
+                'willingness' => $willingnessForm
             ]);
         }
-
-        // Get willingness form for book info
-        $willingnessForm = WillingnessForm::where('main_author_email', $user->email)
-            ->where('status', 'approved')
-            ->latest()
-            ->first();
 
         // Build timeline steps for dashboard
         $timelineSteps = $this->buildDashboardTimeline($manuscript);
@@ -166,6 +167,7 @@ class ManuscriptController extends Controller
                 ],
             ],
             'timeline' => $timelineSteps,
+            'willingness' => $willingnessForm
         ]);
     }
 
