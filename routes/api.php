@@ -31,6 +31,7 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index']);
         Route::get('/dashboard/activities', [DashboardController::class, 'getActivities']);
         Route::get('/willingness-forms', [WillingnessFormController::class, 'index']);
+        Route::get('/willingness-forms/{id}', [WillingnessFormController::class, 'show']);
         Route::patch('/willingness-forms/{id}/approve', [WillingnessFormController::class, 'approve']);
         Route::patch('/willingness-forms/{id}/reject', [WillingnessFormController::class, 'reject']);
         Route::apiResource('users', UserController::class)->only(['index','store', 'show', 'update', 'destroy']);

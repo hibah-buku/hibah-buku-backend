@@ -6,6 +6,8 @@
 
 use App\Http\Controllers\Api\NotificationLogController;
 use App\Http\Controllers\Api\NotificationTemplateController;
+use Illuminate\Support\Facades\Route;
+
 
 // Pastikan di dalam Route::middleware(['auth:sanctum'])->group(...) atau sesuai auth yang dipakai kelompok
 
