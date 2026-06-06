@@ -30,6 +30,22 @@ class DraftUploadController extends Controller
     {
         $user = Auth::user();
 
+        // Cek apakah penulis sudah memiliki kontrak yang divalidasi oleh admin
+        $contract = null;
+        if ($user->author) {
+            $contract = Contract::where('author_id', $user->author->id)
+                ->where('status', 'contract_validated')
+                ->latest()
+                ->first();
+        }
+
+        if (!$contract) {
+            return ApiResponse::error(
+                'Anda tidak dapat mengunggah draft naskah sebelum kontrak Anda disetujui/divalidasi oleh admin.',
+                403
+            );
+        }
+
         // Cek apakah penulis sudah punya manuscript aktif
         $existingManuscript = Manuscript::where('user_id', $user->id)
             ->whereNotIn('status', [Manuscript::STATUS_PUBLISHED])
@@ -59,15 +75,6 @@ class DraftUploadController extends Controller
 
         try {
             DB::beginTransaction();
-
-            // 1. Cari contract yang sudah divalidasi
-            $contract = null;
-            if ($user->author) {
-                $contract = Contract::where('author_id', $user->author->id)
-                    ->where('status', 'contract_validated')
-                    ->latest()
-                    ->first();
-            }
 
             // 2. Ambil book_type dari willingness_forms (data Kelompok 1)
             $willingnessForm = WillingnessForm::where('main_author_email', $user->email)
