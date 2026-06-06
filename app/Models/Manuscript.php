@@ -96,10 +96,16 @@ class Manuscript extends Model
         return $this->hasMany(ManuscriptFile::class);
     }
 
-    // Relasi: Manuscript punya banyak AuthorDocument
-    public function authorDocuments()
+    // Alias untuk user (dipakai PublisherController)
+    public function author()
     {
-        return $this->hasMany(AuthorDocument::class);
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    // Relasi: Manuscript punya banyak PublisherCheck
+    public function publisherChecks()
+    {
+        return $this->hasMany(PublisherCheck::class);
     }
 
     /**
