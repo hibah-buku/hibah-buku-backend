@@ -82,8 +82,8 @@ class ContractController extends Controller
                 );
             } catch (\Throwable $e) {
                 Log::error('Failed to send admin notification for new contract', [
-                'contract_id' => $contract->id,
-                'error' => $e->getMessage()
+                    'contract_id' => $contract->id,
+                    'error' => $e->getMessage()
                 ]);
             }
 
@@ -156,8 +156,8 @@ class ContractController extends Controller
             }
         } catch (\Throwable $e) {
             Log::error('Failed to send contract rejection email to author', [
-                    'contract_id' => $contract->id,
-                    'error' => $e->getMessage()
+                'contract_id' => $contract->id,
+                'error' => $e->getMessage()
             ]);
         }
 
@@ -196,7 +196,7 @@ class ContractController extends Controller
 
                 $bookTitle = $willingnessForm ? $willingnessForm->book_title : 'N/A';
 
-                 $this->notificationService->sendContractRejected(
+                $this->notificationService->sendContractRejected(
                     email: $contract->author->user->email,
                     authorName: $contract->author->user->name,
                     bookTitle: $bookTitle,
