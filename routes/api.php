@@ -88,6 +88,7 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/reviewers/{reviewer}/assignments', [ReviewerAssignmentController::class, 'indexByReviewer']);
         Route::get('/assignments/{assignment}', [ReviewerAssignmentController::class, 'show']);
         Route::get('/assignments/{assignment}/preview', [ReviewerAssignmentController::class, 'preview']);
+        Route::get('/assignments/{assignment}/results', [ReviewerAssignmentController::class, 'results']);
         Route::post('/assignments/{assignment}/reviews', [ReviewerAssignmentController::class, 'submitReview']);
         Route::get('/rubrics', [ReviewRubricController::class, 'index']);
     });

@@ -109,7 +109,7 @@ class ReviewerAssignmentController extends Controller
             return ApiResponse::error('Akses ditolak.', 403);
         }
 
-        $assignments = ReviewerAssignment::with(['author.user'])
+        $assignments = ReviewerAssignment::with(['author.user', 'manuscript'])
             ->where('reviewer_id', $reviewerId)
             ->orderBy('created_at', 'desc')
             ->get([
@@ -123,7 +123,9 @@ class ReviewerAssignmentController extends Controller
                 'author_id',
             ])->map(function($assignment) {
                 $assignment->author_name = $assignment->author?->user?->name;
+                $assignment->book_type = $assignment->manuscript?->book_type;
                 unset($assignment->author); // optional, to keep response clean
+                unset($assignment->manuscript);
                 return $assignment;
             });
 
