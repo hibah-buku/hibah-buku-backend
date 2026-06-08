@@ -109,7 +109,8 @@ class ReviewerAssignmentController extends Controller
             return ApiResponse::error('Akses ditolak.', 403);
         }
 
-        $assignments = ReviewerAssignment::where('reviewer_id', $reviewerId)
+        $assignments = ReviewerAssignment::with(['author.user'])
+            ->where('reviewer_id', $reviewerId)
             ->orderBy('created_at', 'desc')
             ->get([
                 'id',
@@ -119,7 +120,12 @@ class ReviewerAssignmentController extends Controller
                 'deadline_review',
                 'manuscript_file_url',
                 'final_score',
-            ]);
+                'author_id',
+            ])->map(function($assignment) {
+                $assignment->author_name = $assignment->author?->user?->name;
+                unset($assignment->author); // optional, to keep response clean
+                return $assignment;
+            });
 
         return ApiResponse::success('Daftar assignment reviewer.', $assignments);
     }
