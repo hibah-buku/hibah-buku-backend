@@ -19,6 +19,7 @@ use App\Services\NotificationService;
 class UserController extends Controller
 {
     public function __construct(protected NotificationService $notificationService) {}
+
     /**
      * Index Users (List Reviewer/Penerbit/Admin)
      * GET /api/users
@@ -85,7 +86,6 @@ class UserController extends Controller
         try {
             DB::beginTransaction();
 
-
             // Mencari role berdasarkan nama
             $role = Role::where('name', $request->role_name)->first();
 
@@ -106,14 +106,6 @@ class UserController extends Controller
             ]);
 
             DB::commit();
-
-            // Kirim notifikasi email login credentials
-            $this->notificationService->sendAccountCreated(
-                $request->email,
-                $request->name,
-                $plainPassword,
-                url('/login')
-            );
 
             return ApiResponse::success(
                 "Akun {$request->role_name} berhasil dibuat. Kredensial telah dikirim ke email.",
