@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\Author;
 use App\Models\WillingnessForm;
 use App\Models\Contract;
+use App\Models\Manuscript;
 use App\Helpers\ApiResponse;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
