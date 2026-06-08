@@ -169,21 +169,13 @@ class DashboardController extends Controller
         );
     }
 
-    /**
-     * GET /api/admin/tasks
-     * Endpoint untuk mendapatkan naskah yang belum diplot ke reviewer (Khusus Frontend Kel3).
-     */
     public function getTasks()
     {
-        // Unassigned manuscripts (status draft_uploaded, or any status that needs a reviewer and doesn't have an assignment)
-        // Note: Manuscript might not have a draft if not uploaded, but we usually plot when draft_uploaded.
-        // Let's get manuscripts that do not exist in reviewer_assignments.
-        
+        // Unassigned manuscripts
         $unassigned = Manuscript::with(['user.author', 'latestFile'])
             ->whereNotIn('id', function($query) {
                 $query->select('manuscript_id')->from('reviewer_assignments');
             })
-            // ->where('status', 'draft_uploaded') // Optional: only those with draft
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(function ($m) {
@@ -201,8 +193,20 @@ class DashboardController extends Controller
                 ];
             });
 
+        // Assigned (belum selesai)
+        $assigned = \App\Models\ReviewerAssignment::whereIn('status', ['assigned', 'under_review'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // Completed (selesai)
+        $completed = \App\Models\ReviewerAssignment::where('status', 'completed')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
         return ApiResponse::success('Daftar tugas plotting', [
-            'unassigned' => $unassigned
+            'unassigned' => $unassigned,
+            'assigned' => $assigned,
+            'completed' => $completed
         ]);
     }
 }
