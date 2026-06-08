@@ -14,9 +14,12 @@ use Illuminate\Support\Facades\Auth;
 use App\Helpers\ApiResponse;
 use App\Http\Resources\UserResource;
 use App\Http\Resources\UserCollection;
+use App\Services\NotificationService;
 
 class UserController extends Controller
 {
+    public function __construct(protected NotificationService $notificationService) {}
+
     /**
      * Index Users (List Reviewer/Penerbit/Admin)
      * GET /api/users
@@ -25,17 +28,24 @@ class UserController extends Controller
     {
         $query = User::with('role');
 
-        if ($request->has('role')) {
-            $query->whereHas('role', function($q) use ($request) {
+        // Jika frontend mengirim include_deleted=1,
+        // maka user yang sudah soft delete tetap ikut ditampilkan
+        if ($request->boolean('include_deleted')) {
+            $query->withTrashed();
+        }
+
+        if ($request->has('role') && $request->role != '') {
+            $query->whereHas('role', function ($q) use ($request) {
                 $q->where('name', $request->role);
             });
         }
 
         if ($request->has('search') && $request->search != '') {
             $searchTerm = $request->search;
-            $query->where(function($q) use ($searchTerm) {
+
+            $query->where(function ($q) use ($searchTerm) {
                 $q->where('name', 'like', "%{$searchTerm}%")
-                  ->orWhere('email', 'like', "%{$searchTerm}%");
+                    ->orWhere('email', 'like', "%{$searchTerm}%");
             });
         }
 
@@ -73,9 +83,8 @@ class UserController extends Controller
             return ApiResponse::error('Validasi gagal.', 422, $validator->errors());
         }
 
-       try {
+        try {
             DB::beginTransaction();
-
 
             // Mencari role berdasarkan nama
             $role = Role::where('name', $request->role_name)->first();
@@ -103,7 +112,6 @@ class UserController extends Controller
                 new UserResource($user),
                 201
             );
-
         } catch (\Exception $e) {
             DB::rollBack();
             return ApiResponse::error('Gagal membuat akun: ' . $e->getMessage(), 500);
@@ -116,7 +124,9 @@ class UserController extends Controller
      */
     public function show(string $id)
     {
-        $user = User::with('role')->find($id);
+        $user = User::withTrashed()
+            ->with('role')
+            ->find($id);
 
         if (!$user) {
             return ApiResponse::error('Pengguna tidak ditemukan.', 404);
@@ -148,7 +158,7 @@ class UserController extends Controller
             'name' => 'sometimes|string|max:255',
             'email' => 'sometimes|email|unique:users,email,' . $user->id,
             'status' => 'sometimes|in:active,inactive',
-            'role_name' => 'sometimes|in:reviewer,penerbit,admin,penulis',
+            'role_name' => 'sometimes|in:reviewer,penerbit,admin',
             'password' => 'sometimes|string|min:6',
         ]);
 
@@ -202,7 +212,6 @@ class UserController extends Controller
                 'Data pengguna berhasil diperbarui.',
                 new UserResource($user)
             );
-
         } catch (\Exception $e) {
             DB::rollBack();
             return ApiResponse::error('Gagal memperbarui data: ' . $e->getMessage(), 500);
@@ -241,7 +250,6 @@ class UserController extends Controller
                 null,
                 200
             );
-
         } catch (\Exception $e) {
             DB::rollBack();
             return ApiResponse::error('Gagal menonaktifkan akun: ' . $e->getMessage(), 500);

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Contract;
+use App\Models\WillingnessForm;
 use App\Models\Author;
 use App\Http\Resources\ContractCollection;
 use App\Http\Resources\ContractResource;
@@ -12,6 +13,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use App\Helpers\ApiResponse;
 use Illuminate\Support\Facades\Storage;
+use App\Services\NotificationService;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\URL;
 
 class ContractController extends Controller
 {
@@ -20,7 +24,6 @@ class ContractController extends Controller
      * Endpoint: POST /api/contracts
      * Access: Penulis Only
      */
-
     public function upload(Request $request)
     {
         $user = Auth::user();
@@ -55,7 +58,31 @@ class ContractController extends Controller
                 ]
             );
 
-            return ApiResponse::success('Kontrak berhasil diunggah. Menunggu validasi admin', new ContractResource($contract), 201);
+            try {
+                $reviewUrl = URL::to('http://localhost:5173/admin/contracts');
+
+                $willingnessForm = WillingnessForm::where('main_author_email', $contract->author->user->email)
+                    ->where('status', 'approved')
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+
+                $bookTitle = $willingnessForm ? $willingnessForm->book_title : 'N/A';
+                $this->notificationService->sendNewContractUploadToAdmins(
+                    contractId: $contract->id,
+                    authorName: $contract->author->user->name,
+                    bookTitle: $bookTitle,
+                    fileName: $contract->original_name,
+                    uploadedAt: $contract->created_at->format('Y-m-d H:i:s'),
+                    reviewUrl: $reviewUrl
+                );
+            } catch (\Throwable $e) {
+                Log::error('Failed to send admin notification for new contract', [
+                    'contract_id' => $contract->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+
+            return ApiResponse::success('Kontrak berhasil diunggah dan email terkirim. Menunggu untuk validasi', new ContractResource($contract), 201);
         } catch (\Exception $e) {
             return ApiResponse::error('Gagal menggunggah file: ' . $e->getMessage(), 500);
         }
@@ -66,7 +93,6 @@ class ContractController extends Controller
      * Endpoint: GET /api/contracts/me
      * Access: Penulis only
      */
-
     public function myContract(Request $request)
     {
         $user = Auth::user();
@@ -92,10 +118,13 @@ class ContractController extends Controller
      * Endpoint: PATCH /api/contracts/{contract}/validate
      * Access: Admin only
      */
-
     public function validateContract(Request $request, Contract $contract)
     {
         $user = Auth::user();
+
+        // Set deadline draft upload 1 minggu dari sekarang
+        $draftDeadline = now()->addWeek();
+
         $contract->update([
             'status' => 'contract_validated',
             'notes' => $request->input('notes', 'Kontrak divalidasi oleh admin'),
@@ -103,15 +132,35 @@ class ContractController extends Controller
             'validated_at' => now(),
         ]);
 
+        // Kirim email notifikasi ke penulis
+        try {
+            if ($contract->author && $contract->author->user) {
+                $authorEmail = $contract->author->user->email;
+                $authorName = $contract->author->user->name;
+                $uploadUrl = url('/api/manuscripts/upload-draft');
+
+                $this->notificationService->sendContractValidated(
+                    $authorEmail,
+                    $authorName,
+                    $draftDeadline->format('d F Y H:i'),
+                    $uploadUrl
+                );
+            }
+        } catch (\Throwable $e) {
+            Log::error('Failed to send contract rejection email to author', [
+                'contract_id' => $contract->id,
+                'error' => $e->getMessage()
+            ]);
+        }
+
         return ApiResponse::success(
-            'Kontrak telah divalidasi. penulis dapat melanjutkan ke upload naskah.',
+            'Kontrak telah divalidasi dan email dikirim. penulis dapat melanjutkan ke upload naskah.',
             new ContractResource($contract)
         );
     }
 
     public function rejectContract(Request $request, Contract $contract)
     {
-
         $user = Auth::user();
         $validator = Validator::make($request->all(), [
             'rejection_reason' => 'required|string|min:5',
@@ -129,14 +178,36 @@ class ContractController extends Controller
                 'validated_at' => now()
             ]);
 
+            try {
+                $resubmitUrl = URL::to('http://localhost:5173/author/upload-kontrak');
+                $willingnessForm = WillingnessForm::where('main_author_email', $contract->author->user->email)
+                    ->where('status', 'approved')
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+
+                $bookTitle = $willingnessForm ? $willingnessForm->book_title : 'N/A';
+
+                $this->notificationService->sendContractRejected(
+                    email: $contract->author->user->email,
+                    authorName: $contract->author->user->name,
+                    bookTitle: $bookTitle,
+                    rejectionReason: $request->rejection_reason,
+                    resubmitUrl: $resubmitUrl
+                );
+            } catch (\Throwable $e) {
+                Log::error('Failed to send contract rejection email to author', [
+                    'contract_id' => $contract->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+
             return ApiResponse::success(
-                'Kontrak ditolak. Silahkan perbaiki dan unggah ulang.',
+                'Kontrak ditolak dan email notifikasi terkirim..',
                 new ContractResource($contract)
             );
         } catch (\Exception $e) {
             return ApiResponse::error('Gagal menolak kontrak: ' . $e->getMessage(), 500);
         }
-
     }
 
     // Method index untuk Admin
@@ -192,5 +263,4 @@ class ContractController extends Controller
             $contract->original_name // Nama file asli saat didownload
         );
     }
-
 }

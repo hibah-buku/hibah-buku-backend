@@ -34,7 +34,7 @@
         @yield('content')
     </div>
     <div class="footer">
-        <p>Email ini dikirim otomatis oleh sistem. Mohon tidak membalas email ini.</p>
+        <p>Email ini dikirim otomatis oleh sistem. Mohon tidak membalas email ini jika tidak diperlukan klarifikasi lebih lanjut.</p>
         <p style="margin-top:8px">© {{ date('Y') }} AEP UNY – Sistem Penulisan Hibah Buku</p>
     </div>
 </div>

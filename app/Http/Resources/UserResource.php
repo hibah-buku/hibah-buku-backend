@@ -20,6 +20,11 @@ class UserResource extends JsonResource
             'name' => $this->name,
             'email' => $this->email,
             'role' => $this->role?->name,
+
+            // Tambahan untuk fitur status active/inactive
+            'status' => $this->deleted_at ? 'inactive' : ($this->status ?? 'active'),
+            'deleted_at' => $this->deleted_at,
+
             '_links' => $this->links($request),
         ];
 
@@ -33,13 +38,13 @@ class UserResource extends JsonResource
         return $data;
     }
 
-     private function links(Request $request): array
+    private function links(Request $request): array
     {
         $links = [
             'self' => "/api/users/{$this->id}",
         ];
 
-        if ($request->user()->id === $this->id) {
+        if ($request->user() && $request->user()->id === $this->id) {
             $links['logout'] = [
                 'message' => ' logout',
                 'href' => '/api/auth/logout',
@@ -53,14 +58,16 @@ class UserResource extends JsonResource
         if ($role === 'admin') {
             $links['willingness_forms'] = [
                 'message' => 'Manajemen form kesediaan calon penulis',
-                'href' =>'/api/willingness-forms',
+                'href' => '/api/willingness-forms',
                 'method' => 'GET'
             ];
+
             $links['contracts'] = [
                 'message' => 'Manajemen Kontrak penulis',
                 'href' => '/api/contracts',
                 'method' => 'GET'
             ];
+
             $links['manage_users'] = [
                 'message' => 'Manajemen User',
                 'href' => '/api/users',
@@ -72,11 +79,13 @@ class UserResource extends JsonResource
                 'href' => '/api/contracts',
                 'method' => 'POST',
             ];
+
             $links['view_my_contract'] = [
                 'message' => 'Lihat status dan detail kontrak Anda.',
                 'href' => '/api/contracts/me',
                 'method' => 'GET',
             ];
+
             if ($this->author && $this->author->contracts()->exists()) {
                 $contractId = $this->author->contracts()->latest()->first()->id;
 
@@ -86,7 +95,7 @@ class UserResource extends JsonResource
                     'method' => 'GET',
                 ];
             }
-        } elseif ($role === 'reviewer') { // Tugas kelompok lain, tolong dilengkapi ya
+        } elseif ($role === 'reviewer') {
             $reviewerId = $this->id;
             $reviewer = Reviewer::where('user_id', $this->id)->first();
             if ($reviewer) {
@@ -102,11 +111,23 @@ class UserResource extends JsonResource
                 'href' => '/api/rubrics',
                 'method' => 'GET'
             ];
-        } elseif ($role === 'penerbit') { // Tugas kelompok lain, tolong dilengkapi ya
-            $links['lorem'] = [
-                'message' => 'lorem ipsum dolor sit amet',
-                'href' => '/api/lorem',
-                'method' =>  'GET'
+        } elseif ($role === 'penerbit') {
+            $links['publisher_dashboard'] = [
+                'message' => 'Pantau naskah pra-cetak.',
+                'href' => '/api/publisher/dashboard',
+                'method' => 'GET',
+            ];
+
+            $links['publisher_manuscripts'] = [
+                'message' => 'Daftar naskah pra-cetak untuk ditinjau.',
+                'href' => '/api/publisher/manuscripts',
+                'method' => 'GET',
+            ];
+
+            $links['publisher_decision'] = [
+                'message' => 'Buat keputusan penerbitan naskah.',
+                'href' => '/api/publisher/manuscripts/{manuscript_id}/decision',
+                'method' => 'POST',
             ];
         }
 

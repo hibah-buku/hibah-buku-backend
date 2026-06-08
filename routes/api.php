@@ -41,6 +41,7 @@ Route::middleware('auth:api')->group(function () {
 
         // Form Kesediaan
         Route::get('/willingness-forms', [WillingnessFormController::class, 'index']);
+        Route::get('/willingness-forms/{id}', [WillingnessFormController::class, 'show']);
         Route::patch('/willingness-forms/{id}/approve', [WillingnessFormController::class, 'approve']);
         Route::patch('/willingness-forms/{id}/reject', [WillingnessFormController::class, 'reject']);
 
