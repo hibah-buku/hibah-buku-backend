@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RoleAndAdminSeeder::class,
             ReviewerModuleSeeder::class,
+            PublisherSeeder::class,
         ]);
     }
 }

@@ -60,7 +60,7 @@ class AuthorDocumentController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'document_type' => 'required|string|in:ktp,surat_pernyataan,rekening',
+            'document_type' => 'required|string|in:surat_pernyataan,scan_bermeterai,dokumen_pendukung',
             'document_file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120', // Max 5MB
         ]);
 
@@ -108,6 +108,30 @@ class AuthorDocumentController extends Controller
             );
 
             DB::commit();
+
+            // Kirim notifikasi email ke Penerbit (Publisher)
+            try {
+                $reviewUrl = 'http://localhost:5173/publisher/dashboard';
+                $documentTypeLabels = [
+                    'surat_pernyataan' => 'Surat Pernyataan Penulis',
+                    'scan_bermeterai' => 'Scan Bermeterai',
+                    'dokumen_pendukung' => 'Dokumen Pendukung Lain',
+                ];
+                $docLabel = $documentTypeLabels[$document->document_type] ?? ucwords(str_replace('_', ' ', $document->document_type));
+
+                $this->notificationService->sendNewDocumentUploadToPublishers(
+                    authorName: $user->name,
+                    bookTitle: $manuscript->title,
+                    documentTypeLabel: $docLabel,
+                    uploadedAt: $document->uploaded_at->format('Y-m-d H:i:s'),
+                    reviewUrl: $reviewUrl
+                );
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error('Failed to send publisher notification for new author document', [
+                    'document_id' => $document->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
 
             return ApiResponse::success(
                 'Dokumen administrasi berhasil diunggah.',
