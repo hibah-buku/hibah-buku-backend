@@ -19,19 +19,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             RoleAndAdminSeeder::class,
+            ReviewerModuleSeeder::class,
         ]);
-
-        // Tambahkan pengguna uji tambahan jika diperlukan.
-        $adminRole = Role::where('name', 'admin')->first();
-
-        User::firstOrCreate(
-            ['email' => 'test@example.com'],
-            [
-                'name' => 'Test User',
-                'password' => Hash::make('password123'),
-                'status' => 'active',
-                'role_id' => $adminRole ? $adminRole->id : null,
-            ]
-        );
     }
 }

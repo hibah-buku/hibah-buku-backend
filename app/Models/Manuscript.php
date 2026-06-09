@@ -107,6 +107,12 @@ class Manuscript extends Model
     {
         return $this->hasMany(PublisherCheck::class);
     }
+    
+    // Relasi: Manuscript punya banyak AuthorDocument
+    public function authorDocuments()
+    {
+        return $this->hasMany(AuthorDocument::class);
+    }
 
     /**
      * Get file draft terbaru (latest uploaded file)

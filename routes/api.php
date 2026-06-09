@@ -12,6 +12,9 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\ReviewerAssignmentController;
 use App\Http\Controllers\Api\ReviewRubricController;
 use App\Http\Controllers\Api\ReviewerController;
+use App\Http\Controllers\Api\PublisherController;
+use App\Http\Controllers\Api\NotificationLogController;
+use App\Http\Controllers\Api\NotificationTemplateController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -98,8 +101,8 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/manuscripts/{manuscript}/download', [ManuscriptDownloadController::class, 'download']);
         Route::get('/publisher/dashboard', [PublisherController::class, 'dashboard']);
         Route::get('/publisher/manuscripts', [PublisherController::class, 'index']);
-        Route::get('/publisher/manuscripts/{manuscripts}', [PublisherController::class, 'show']);
-        Route::post('/publisher/manuscripts/{manuscripts}/decision', [PublisherController::class, 'storeDecision']);
+        Route::get('/publisher/manuscripts/{id}', [PublisherController::class, 'show']);
+        Route::post('/publisher/manuscripts/{id}/decision', [PublisherController::class, 'storeDecision']);
     });
 
     // Notification templates & logs

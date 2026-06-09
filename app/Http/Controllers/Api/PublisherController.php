@@ -25,7 +25,7 @@ class PublisherController extends Controller
     public function dashboard(Request $request)
     {
         try {
-            $praCetak = Manuscript::where('status', 'preprint')->count();
+            $praCetak = Manuscript::where('status', 'approved')->count();
             $revisionRequests = Manuscript::where('status', 'publisher_revised')->count();
             $approved = Manuscript::where('status', 'to_print')->count();
 
@@ -193,6 +193,7 @@ class PublisherController extends Controller
     public function show(string $id)
     {
         try {
+            // 1. Ambil data naskah
             $manuscript = Manuscript::with(['author', 'publisherChecks'])->find($id);
 
             if (!$manuscript) {
@@ -214,6 +215,16 @@ class PublisherController extends Controller
                         ]
                 ], 404);
             }
+
+            // Ambil catatan revisi dari tabel PublisherDecision ✨
+            $latestDecision = PublisherDecision::where('manuscript_id', $id)
+                                ->orderBy('created_at', 'desc')
+                                ->first();
+            
+            if ($latestDecision) {
+                $manuscript->revision_notes = $latestDecision->revision_notes;
+            }
+
             $links = [
                 [
                     'rel' => 'self',
@@ -227,7 +238,7 @@ class PublisherController extends Controller
                 ]
             ];
 
-            if ($manuscript->status === 'preprint') {
+            if ($manuscript->status === 'approved') {
                 $links[] = [
                     'rel' => 'submit_decision',
                     'href' => url("/api/publisher/manuscripts/{$id}/decision"),
