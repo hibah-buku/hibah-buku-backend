@@ -67,6 +67,8 @@ Route::middleware('auth:api')->group(function () {
 
     // Penerbit Only
     Route::middleware('role:penerbit')->group(function () {
+        Route::get('/manuscripts/{manuscript}', [ManuscriptController::class, 'show']);
+        Route::get('/manuscripts/{manuscript}/download', [ManuscriptDownloadController::class, 'download']);
         Route::get('/publisher/dashboard', [PublisherController::class, 'dashboard']);
         Route::get('/publisher/manuscripts', [PublisherController::class, 'index']);
         Route::get('/publisher/manuscripts/{manuscripts}', [PublisherController::class, 'show']);

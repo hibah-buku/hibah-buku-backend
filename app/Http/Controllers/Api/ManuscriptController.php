@@ -52,7 +52,10 @@ class ManuscriptController extends Controller
     {
         $user = Auth::user();
 
-        if ($manuscript->user_id !== $user->id) {
+        $canAccess = $manuscript->user_id === $user->id
+            || ($user->role && in_array($user->role->name, ['admin', 'penerbit'], true));
+
+        if (!$canAccess) {
             return ApiResponse::error('Anda tidak memiliki akses ke naskah ini.', 403);
         }
 
