@@ -22,7 +22,9 @@ use Illuminate\Support\Facades\Log;
 
 class WillingnessFormController extends Controller
 {
-    public function __construct(protected NotificationService $notificationService) {}
+    public function __construct(protected NotificationService $notificationService)
+    {
+    }
 
     /**
      * UC-02: Submit Form Kesediaan Penulis

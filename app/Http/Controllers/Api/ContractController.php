@@ -19,11 +19,16 @@ use Illuminate\Support\Facades\URL;
 
 class ContractController extends Controller
 {
+    public function __construct(protected NotificationService $notificationService)
+    {
+    }
+
     /**
      * UC-04: Penulis Upload Kontrak
      * Endpoint: POST /api/contracts
      * Access: Penulis Only
      */
+
     public function upload(Request $request)
     {
         $user = Auth::user();
@@ -59,7 +64,7 @@ class ContractController extends Controller
             );
 
             try {
-                $reviewUrl = URL::to('http://localhost:5173/admin/contracts');
+                $reviewUrl = URL::to('api/admin/contracts');
 
                 $willingnessForm = WillingnessForm::where('main_author_email', $contract->author->user->email)
                     ->where('status', 'approved')
@@ -93,6 +98,7 @@ class ContractController extends Controller
      * Endpoint: GET /api/contracts/me
      * Access: Penulis only
      */
+
     public function myContract(Request $request)
     {
         $user = Auth::user();
@@ -118,6 +124,7 @@ class ContractController extends Controller
      * Endpoint: PATCH /api/contracts/{contract}/validate
      * Access: Admin only
      */
+
     public function validateContract(Request $request, Contract $contract)
     {
         $user = Auth::user();
@@ -130,6 +137,7 @@ class ContractController extends Controller
             'notes' => $request->input('notes', 'Kontrak divalidasi oleh admin'),
             'validated_by' => $user->id,
             'validated_at' => now(),
+            'draft_deadline' => $draftDeadline,
         ]);
 
         // Kirim email notifikasi ke penulis
@@ -161,6 +169,7 @@ class ContractController extends Controller
 
     public function rejectContract(Request $request, Contract $contract)
     {
+
         $user = Auth::user();
         $validator = Validator::make($request->all(), [
             'rejection_reason' => 'required|string|min:5',
@@ -179,7 +188,7 @@ class ContractController extends Controller
             ]);
 
             try {
-                $resubmitUrl = URL::to('http://localhost:5173/author/upload-kontrak');
+                $resubmitUrl = URL::to('api/author/upload-kontrak');
                 $willingnessForm = WillingnessForm::where('main_author_email', $contract->author->user->email)
                     ->where('status', 'approved')
                     ->orderBy('created_at', 'desc')
@@ -208,6 +217,7 @@ class ContractController extends Controller
         } catch (\Exception $e) {
             return ApiResponse::error('Gagal menolak kontrak: ' . $e->getMessage(), 500);
         }
+
     }
 
     // Method index untuk Admin
@@ -263,4 +273,5 @@ class ContractController extends Controller
             $contract->original_name // Nama file asli saat didownload
         );
     }
+
 }

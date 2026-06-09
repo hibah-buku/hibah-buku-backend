@@ -4,7 +4,6 @@ namespace App\Mail;
 
 use App\Models\ReviewerAssignment;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
@@ -14,14 +13,32 @@ class ReviewerAssignedMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $assignment;
-
     /**
      * Create a new message instance.
      */
-    public function __construct(ReviewerAssignment $assignment)
+    public function __construct(ReviewerAssignment|array $assignmentOrData)
     {
-        $this->assignment = $assignment;
+        if ($assignmentOrData instanceof ReviewerAssignment) {
+            $assignment = $assignmentOrData;
+
+            $this->viewData = [
+                'reviewer_name' => $assignment->reviewer_name
+                    ?: $assignment->reviewer?->user?->name
+                    ?: $assignment->reviewer_email
+                    ?: 'Reviewer',
+                'author_name' => $assignment->author?->user?->name
+                    ?: $assignment->author_email
+                    ?: 'Penulis',
+                'book_title' => $assignment->book_title ?: 'Naskah Tanpa Judul',
+                'deadline_date' => $assignment->deadline_review
+                    ? $assignment->deadline_review->translatedFormat('d F Y')
+                    : '-',
+                'review_url' => $assignment->manuscript_file_url
+                    ?: url('/api/assignments/' . $assignment->id),
+            ];
+        } else {
+            $this->viewData = $assignmentOrData;
+        }
     }
 
     /**
@@ -30,7 +47,7 @@ class ReviewerAssignedMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Tugas Review Naskah: ' . $this->assignment->book_title,
+            subject: 'Tugas Review Naskah: ' . ($this->viewData['book_title'] ?? 'Naskah baru'),
         );
     }
 
@@ -40,7 +57,8 @@ class ReviewerAssignedMail extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'emails.reviewer_assigned',
+            view: 'emails.review.assigned',
+            with: $this->viewData,
         );
     }
 

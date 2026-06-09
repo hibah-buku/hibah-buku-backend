@@ -11,7 +11,3 @@ Artisan::command('inspire', function () {
 // Schedule: Send all deadline reminders (H-3, H-2, H-1)
 Schedule::command('app:send-deadline-reminders')
     ->dailyAt('07:00');
-
-// Schedule: Send reviewer reminders
-Schedule::command('app:send-reviewer-reminders')
-    ->dailyAt('08:00');

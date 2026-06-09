@@ -154,7 +154,7 @@ class DraftUploadController extends Controller
 
             // Kirim notifikasi email ke Admin untuk plotting reviewer
             try {
-                $reviewUrl = 'http://localhost:5173/admin/dashboard';
+                $reviewUrl = 'api/admin/dashboard';
                 $this->notificationService->sendNewDraftUploadToAdmins(
                     manuscriptId: $manuscript->id,
                     authorName: $user->name,
