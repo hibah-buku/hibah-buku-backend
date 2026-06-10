@@ -99,7 +99,7 @@ class ContractController extends Controller
      * Access: Penulis only
      */
 
-    public function myContract(Request $request, Contract $contract)
+    public function myContract(Request $request)
     {
         $user = Auth::user();
 
