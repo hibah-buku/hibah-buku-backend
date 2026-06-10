@@ -12,6 +12,9 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\ReviewerAssignmentController;
 use App\Http\Controllers\Api\ReviewRubricController;
 use App\Http\Controllers\Api\ReviewerController;
+use App\Http\Controllers\Api\PublisherController;
+use App\Http\Controllers\Api\NotificationLogController;
+use App\Http\Controllers\Api\NotificationTemplateController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -94,17 +97,27 @@ Route::middleware('auth:api')->group(function () {
     });
 
     Route::middleware('role:penerbit')->group(function () {
-        Route::get('/publisher/checks', fn() => response()->json(['message' => 'Publisher Endpoint']));
+        Route::get('/manuscripts/{manuscript}', [ManuscriptController::class, 'show']);
+        Route::get('/manuscripts/{manuscript}/download', [ManuscriptDownloadController::class, 'download']);
+        Route::get('/publisher/dashboard', [PublisherController::class, 'dashboard']);
+        Route::get('/publisher/manuscripts', [PublisherController::class, 'index']);
+        Route::get('/publisher/manuscripts/{id}', [PublisherController::class, 'show']);
+        Route::post('/publisher/manuscripts/{id}/decision', [PublisherController::class, 'storeDecision']);
     });
-});
 
-Route::get('/test-mail', function () {
-    try {
-        \Illuminate\Support\Facades\Mail::raw('Ini adalah email pengujian dari sistem.', function($msg) { 
-            $msg->to('test@example.com')->subject('Email Pengujian Mailtrap'); 
-        });
-        return \App\Helpers\ApiResponse::success('Email berhasil dikirim ke Mailtrap!');
-    } catch (\Exception $e) {
-        return \App\Helpers\ApiResponse::error('Gagal mengirim email: ' . $e->getMessage(), 500);
-    }
+    // Notification templates & logs
+    Route::prefix('notification-templates')->group(function () {
+        Route::get('/', [NotificationTemplateController::class, 'index']);
+        Route::post('/', [NotificationTemplateController::class, 'store']);
+        Route::get('/{id}', [NotificationTemplateController::class, 'show']);
+        Route::put('/{id}', [NotificationTemplateController::class, 'update']);
+    });
+
+    Route::prefix('notification-logs')->group(function () {
+        Route::get('/', [NotificationLogController::class, 'index']);
+        Route::get('/summary', [NotificationLogController::class, 'summary']);
+        Route::get('/{id}', [NotificationLogController::class, 'show']);
+        Route::delete('/{id}', [NotificationLogController::class, 'destroy']);
+    });
+
 });

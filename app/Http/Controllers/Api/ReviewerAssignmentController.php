@@ -11,6 +11,7 @@ use App\Models\ReviewerAssignment;
 use App\Models\ReviewScore;
 use App\Models\StatusLog;
 use App\Models\User;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +21,10 @@ use Illuminate\Support\Facades\Validator;
 
 class ReviewerAssignmentController extends Controller
 {
+    public function __construct(protected NotificationService $notificationService)
+    {
+    }
+
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -222,6 +227,9 @@ class ReviewerAssignmentController extends Controller
             ]);
 
             DB::commit();
+
+            $this->notifyReviewCompletion($assignment);
+
             return ApiResponse::success('Review berhasil dikirim.', ['assignment_id' => $assignment->id]);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -264,6 +272,53 @@ class ReviewerAssignmentController extends Controller
             'max_total' => $maxTotal,
             'percent' => $percent,
         ]);
+    }
+
+    private function notifyReviewCompletion(ReviewerAssignment $assignment): void
+    {
+        $authorEmail = $assignment->author_email ?: $assignment->manuscript?->user?->email;
+        $authorName = $assignment->author?->user?->name ?: $assignment->manuscript?->user?->name ?: 'Penulis';
+        $bookTitle = $assignment->book_title ?: ($assignment->manuscript?->title ?? 'Naskah Tanpa Judul');
+        $deadlineRevision = $assignment->deadline_review
+            ? $assignment->deadline_review->translatedFormat('d F Y')
+            : '-';
+        $reviewUrl = url('/api/assignments/' . $assignment->id);
+
+        if ($authorEmail) {
+            try {
+                $this->notificationService->sendReviewCompleted(
+                    $authorEmail,
+                    $authorName,
+                    $bookTitle,
+                    $deadlineRevision,
+                    $reviewUrl,
+                );
+            } catch (\Throwable $e) {
+                \Log::error('Gagal mengirim email review completed ke penulis: ' . $e->getMessage());
+            }
+        }
+
+        $publishers = User::with('role')
+            ->whereHas('role', function ($query) {
+                $query->where('name', 'penerbit');
+            })
+            ->whereNotNull('email')
+            ->get();
+
+        foreach ($publishers as $publisher) {
+            try {
+                $subject = 'Review naskah selesai: ' . $bookTitle;
+                $body = "Review untuk naskah \"{$bookTitle}\" telah selesai oleh reviewer.\n"
+                    . "Silakan login ke sistem untuk melihat hasil review dan langkah berikutnya.\n"
+                    . "URL: {$reviewUrl}";
+
+                Mail::raw($body, function ($message) use ($publisher, $subject) {
+                    $message->to($publisher->email, $publisher->name)->subject($subject);
+                });
+            } catch (\Throwable $e) {
+                \Log::error('Gagal mengirim email review completed ke publisher ' . ($publisher->email ?? '-') . ': ' . $e->getMessage());
+            }
+        }
     }
 
     public function notify(Request $request, ReviewerAssignment $assignment)
