@@ -99,7 +99,7 @@ class ContractController extends Controller
      * Access: Penulis only
      */
 
-    public function myContract(Request $request)
+    public function myContract(Request $request, Contract $contract)
     {
         $user = Auth::user();
 
@@ -247,6 +247,49 @@ class ContractController extends Controller
             'Daftar semua kontrak.',
             ContractCollection::make($contracts)
         );
+    }
+
+    public function show(Contract $contract)
+    {
+        $user = Auth::user();
+
+        if ($user->role->name !== 'admin' && $contract->author->user_id !== $user->id) {
+            return ApiResponse::error('Akses ditolak.', 403);
+        }
+
+        return ApiResponse::success(
+            'Detail kontrak.',
+            new ContractResource($contract)
+        );
+    }
+
+    /**
+     * Preview file PDF
+     * Endpoint: GET /api/contracts/{contract}/download
+     * Access: Author pemilik kontrak atau Admin
+     */
+    public function previewPdf(Contract $contract)
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        }
+
+        if ($user->role->name !== 'admin' && $contract->author->user_id !== $user->id) {
+            abort(403, 'Akses ditolak.');
+        }
+
+        if (!Storage::disk('public')->exists($contract->file_path)) {
+            abort(404, 'File tidak ditemukan.');
+        }
+
+        $path = Storage::disk('public')->path($contract->file_path);
+
+        return response()->file($path, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="' . $contract->original_name . '"'
+        ]);
     }
 
     /**
