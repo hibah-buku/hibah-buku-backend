@@ -36,6 +36,8 @@ Route::middleware('auth:api')->group(function () {
         Route::patch('/willingness-forms/{id}/reject', [WillingnessFormController::class, 'reject']);
         Route::apiResource('users', UserController::class)->only(['index','store', 'show', 'update', 'destroy']);
         Route::get('/contracts', [ContractController::class, 'index']);
+        Route::get('/contracts/{contract}', [ContractController::class, 'show']);
+        Route::get('/contracts/{contract}/preview', [ContractController::class, 'previewPdf']);
         Route::patch('/contracts/{contract}/validate', [ContractController::class, 'validateContract']);
         Route::patch('/contracts/{contract}/reject', [ContractController::class, 'rejectContract']);
         Route::get('/contracts/{contract}/download', [ContractController::class, 'download']);
@@ -59,6 +61,8 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/manuscripts/me/documents', [AuthorDocumentController::class, 'upload']);
         Route::delete('/manuscripts/me/documents/{document_type}', [AuthorDocumentController::class, 'destroy']);
     });
+
+
 
     // Reviewer Only
     Route::middleware('role:reviewer')->group(function () {
