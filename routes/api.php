@@ -53,6 +53,8 @@ Route::middleware('auth:api')->group(function () {
 
         // Kontrak Manajemen
         Route::get('/contracts', [ContractController::class, 'index']);
+        Route::get('/contracts/{contract}', [ContractController::class, 'show']);
+        Route::get('/contracts/{contract}/preview', [ContractController::class, 'previewPdf']);
         Route::patch('/contracts/{contract}/validate', [ContractController::class, 'validateContract']);
         Route::patch('/contracts/{contract}/reject', [ContractController::class, 'rejectContract']);
         Route::get('/contracts/{contract}/download', [ContractController::class, 'download']);
