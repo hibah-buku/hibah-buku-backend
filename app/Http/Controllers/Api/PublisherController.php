@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Manuscript; 
+use App\Models\PublisherCheck;
 use App\Models\PublisherDecision; 
 use App\Models\NotificationLog;
 use App\Models\Deadline;
@@ -24,7 +25,7 @@ class PublisherController extends Controller
     public function dashboard(Request $request)
     {
         try {
-            $praCetak = Manuscript::where('status', 'preprint')->count();
+            $praCetak = Manuscript::where('status', 'approved')->count();
             $revisionRequests = Manuscript::where('status', 'publisher_revised')->count();
             $approved = Manuscript::where('status', 'to_print')->count();
 
@@ -192,6 +193,7 @@ class PublisherController extends Controller
     public function show(string $id)
     {
         try {
+            // 1. Ambil data naskah
             $manuscript = Manuscript::with(['author', 'publisherChecks'])->find($id);
 
             if (!$manuscript) {
@@ -213,6 +215,16 @@ class PublisherController extends Controller
                         ]
                 ], 404);
             }
+
+            // Ambil catatan revisi dari tabel PublisherDecision ✨
+            $latestDecision = PublisherDecision::where('manuscript_id', $id)
+                                ->orderBy('created_at', 'desc')
+                                ->first();
+            
+            if ($latestDecision) {
+                $manuscript->revision_notes = $latestDecision->revision_notes;
+            }
+
             $links = [
                 [
                     'rel' => 'self',
@@ -226,7 +238,7 @@ class PublisherController extends Controller
                 ]
             ];
 
-            if ($manuscript->status === 'preprint') {
+            if ($manuscript->status === 'approved') {
                 $links[] = [
                     'rel' => 'submit_decision',
                     'href' => url("/api/publisher/manuscripts/{$id}/decision"),
@@ -278,6 +290,10 @@ class PublisherController extends Controller
             $validator = Validator::make($request->all(), [
                 'decision' => 'required|string|in:approved,revised',
                 'revision_notes' => 'required_if:decision,revised|string|nullable',
+                'check_notes' => 'nullable|string',
+                'cover_design_ok' => 'required|boolean',
+                'page_count_ok' => 'required|boolean',
+                'admin_docs_ok' => 'required|boolean',
             ]);
 
         if ($validator->fails()) {
@@ -297,6 +313,29 @@ class PublisherController extends Controller
         }
 
         $validated = $validator->validated();
+
+        if ($validated['decision'] === 'approved' && !($validated['cover_design_ok'] && $validated['page_count_ok'] && $validated['admin_docs_ok'])) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Keputusan approved hanya dapat dikirim bila semua checklist terpenuhi.',
+                'errors' => [
+                    'cover_design_ok' => ['Checklist cover design, page count, dan admin docs harus semua benar untuk keputusan approved.'],
+                ],
+            ], 422);
+        }
+
+        PublisherCheck::updateOrCreate(
+            [
+                'manuscript_id' => $manuscript->id,
+                'publisher_id' => auth()->id(),
+            ],
+            [
+                'check_notes' => $validated['check_notes'] ?? null,
+                'cover_design_ok' => $validated['cover_design_ok'],
+                'page_count_ok' => $validated['page_count_ok'],
+                'admin_docs_ok' => $validated['admin_docs_ok'],
+            ]
+        );
 
         $decision = PublisherDecision::create([
             'manuscript_id' => $manuscript->id,

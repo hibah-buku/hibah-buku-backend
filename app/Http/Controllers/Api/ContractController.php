@@ -64,7 +64,7 @@ class ContractController extends Controller
             );
 
             try {
-                $reviewUrl = URL::to('http://localhost:5173/admin/contracts');
+                $reviewUrl = URL::to('api/admin/contracts');
 
                 $willingnessForm = WillingnessForm::where('main_author_email', $contract->author->user->email)
                     ->where('status', 'approved')
@@ -82,8 +82,8 @@ class ContractController extends Controller
                 );
             } catch (\Throwable $e) {
                 Log::error('Failed to send admin notification for new contract', [
-                'contract_id' => $contract->id,
-                'error' => $e->getMessage()
+                    'contract_id' => $contract->id,
+                    'error' => $e->getMessage()
                 ]);
             }
 
@@ -156,8 +156,8 @@ class ContractController extends Controller
             }
         } catch (\Throwable $e) {
             Log::error('Failed to send contract rejection email to author', [
-                    'contract_id' => $contract->id,
-                    'error' => $e->getMessage()
+                'contract_id' => $contract->id,
+                'error' => $e->getMessage()
             ]);
         }
 
@@ -188,7 +188,7 @@ class ContractController extends Controller
             ]);
 
             try {
-                $resubmitUrl = URL::to('http://localhost:5173/author/upload-kontrak');
+                $resubmitUrl = URL::to('api/author/upload-kontrak');
                 $willingnessForm = WillingnessForm::where('main_author_email', $contract->author->user->email)
                     ->where('status', 'approved')
                     ->orderBy('created_at', 'desc')
@@ -196,7 +196,7 @@ class ContractController extends Controller
 
                 $bookTitle = $willingnessForm ? $willingnessForm->book_title : 'N/A';
 
-                 $this->notificationService->sendContractRejected(
+                $this->notificationService->sendContractRejected(
                     email: $contract->author->user->email,
                     authorName: $contract->author->user->name,
                     bookTitle: $bookTitle,

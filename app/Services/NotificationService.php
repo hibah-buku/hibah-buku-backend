@@ -15,6 +15,7 @@ use App\Mail\WillingnessRejectedMail;
 use App\Models\NotificationLog;
 use App\Mail\NewWillingnessFormAdminNotification;
 use App\Mail\NewContractUploadNotification;
+use App\Mail\NewDraftUploadNotification;
 use App\Mail\ContractRejectedMail;
 use App\Models\User;
 use App\Models\Role;
@@ -134,6 +135,42 @@ class NotificationService
                     'file_name'    => $fileName,
                     'uploaded_at'  => $uploadedAt,
                     'review_url'   => $reviewUrl,
+                ]),
+                $admin->email,
+                $admin->name
+            );
+        }
+
+        return $result;
+    }
+
+    public function sendNewDraftUploadToAdmins(
+        int $manuscriptId,
+        string $authorName,
+        string $bookTitle,
+        ?string $bookType,
+        string $uploadedAt,
+        string $reviewUrl
+    ): array {
+        $adminRole = Role::where('name', 'admin')->first();
+        $admins = User::where('role_id', $adminRole->id)->get();
+
+        if (!$uploadedAt) {
+            $uploadedAt = now()->format('Y-m-d H:i:s');
+        }
+
+        $result = [];
+
+        foreach ($admins as $admin) {
+            $result[] = $this->send(
+                new NewDraftUploadNotification([
+                    'manuscript_id' => $manuscriptId,
+                    'author_name'   => $authorName,
+                    'book_title'    => $bookTitle,
+                    'book_type'     => $bookType,
+                    'uploaded_at'   => $uploadedAt,
+                    'review_url'    => $reviewUrl,
+                    'admin_name'    => $admin->name,
                 ]),
                 $admin->email,
                 $admin->name

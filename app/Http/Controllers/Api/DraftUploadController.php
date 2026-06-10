@@ -15,9 +15,14 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use App\Helpers\ApiResponse;
+use App\Services\NotificationService;
+use Illuminate\Support\Facades\Log;
 
 class DraftUploadController extends Controller
 {
+    public function __construct(protected NotificationService $notificationService)
+    {
+    }
     /**
      * UC-05: Penulis Upload Naskah Awal (Draft)
      * Endpoint: POST /api/manuscripts/upload-draft
@@ -29,6 +34,22 @@ class DraftUploadController extends Controller
     public function uploadDraft(Request $request)
     {
         $user = Auth::user();
+
+        // Cek apakah penulis sudah memiliki kontrak yang divalidasi oleh admin
+        $contract = null;
+        if ($user->author) {
+            $contract = Contract::where('author_id', $user->author->id)
+                ->where('status', 'contract_validated')
+                ->latest()
+                ->first();
+        }
+
+        if (!$contract) {
+            return ApiResponse::error(
+                'Anda tidak dapat mengunggah draft naskah sebelum kontrak Anda disetujui/divalidasi oleh admin.',
+                403
+            );
+        }
 
         // Cek apakah penulis sudah punya manuscript aktif
         $existingManuscript = Manuscript::where('user_id', $user->id)
@@ -59,15 +80,6 @@ class DraftUploadController extends Controller
 
         try {
             DB::beginTransaction();
-
-            // 1. Cari contract yang sudah divalidasi
-            $contract = null;
-            if ($user->author) {
-                $contract = Contract::where('author_id', $user->author->id)
-                    ->where('status', 'contract_validated')
-                    ->latest()
-                    ->first();
-            }
 
             // 2. Ambil book_type dari willingness_forms (data Kelompok 1)
             $willingnessForm = WillingnessForm::where('main_author_email', $user->email)
@@ -139,6 +151,24 @@ class DraftUploadController extends Controller
             }
 
             DB::commit();
+
+            // Kirim notifikasi email ke Admin untuk plotting reviewer
+            try {
+                $reviewUrl = 'api/admin/dashboard';
+                $this->notificationService->sendNewDraftUploadToAdmins(
+                    manuscriptId: $manuscript->id,
+                    authorName: $user->name,
+                    bookTitle: $manuscript->title,
+                    bookType: $manuscript->book_type,
+                    uploadedAt: now()->format('Y-m-d H:i:s'),
+                    reviewUrl: $reviewUrl
+                );
+            } catch (\Throwable $e) {
+                Log::error('Failed to send admin notification for new draft upload', [
+                    'manuscript_id' => $manuscript->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
 
             $manuscript->load(['bookMetadata', 'latestFile', 'manuscriptFiles', 'user']);
 

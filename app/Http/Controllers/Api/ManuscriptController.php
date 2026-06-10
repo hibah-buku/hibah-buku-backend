@@ -52,7 +52,10 @@ class ManuscriptController extends Controller
     {
         $user = Auth::user();
 
-        if ($manuscript->user_id !== $user->id) {
+        $canAccess = $manuscript->user_id === $user->id
+            || ($user->role && in_array($user->role->name, ['admin', 'penerbit'], true));
+
+        if (!$canAccess) {
             return ApiResponse::error('Anda tidak memiliki akses ke naskah ini.', 403);
         }
 
@@ -207,28 +210,28 @@ class ManuscriptController extends Controller
                 'icon' => 'verified',
             ],
             [
-                'order' => 5,
+                'order' => 4,
                 'key' => 'preprint',
                 'title' => 'Pra-Cetak Penerbit',
                 'description' => 'Naskah masuk ke tahap layouting dan pra-cetak oleh pihak Penerbit.',
                 'icon' => 'upcoming',
             ],
             [
-                'order' => 6,
+                'order' => 5,
                 'key' => 'publisher_revised',
                 'title' => 'Revisi Penerbit',
                 'description' => 'Pemberian catatan perbaikan visual/layout dari pihak Penerbit.',
                 'icon' => 'rate_review',
             ],
             [
-                'order' => 7,
+                'order' => 6,
                 'key' => 'to_print',
                 'title' => 'Siap Cetak',
                 'description' => 'Penerbit menyetujui layout akhir. Naskah siap masuk antrean cetak.',
                 'icon' => 'check_circle',
             ],
             [
-                'order' => 8,
+                'order' => 7,
                 'key' => 'published',
                 'title' => 'Telah Diterbitkan',
                 'description' => 'Buku fisik dan elektronik resmi diterbitkan.',
@@ -244,10 +247,10 @@ class ManuscriptController extends Controller
             'revision_needed' => 3,
             'revision_uploaded' => 2, // Goes back to review cycle
             'approved' => 4,
-            'preprint' => 5,
-            'publisher_revised' => 6,
-            'to_print' => 7,
-            'published' => 8,
+            'preprint' => 4,
+            'publisher_revised' => 5,
+            'to_print' => 6,
+            'published' => 7,
         ];
 
         $currentIndex = $statusOrder[$manuscript->status] ?? 1;
@@ -285,10 +288,10 @@ class ManuscriptController extends Controller
             'revision_needed' => 3,
             'revision_uploaded' => 2,
             'approved' => 4,
-            'preprint' => 5,
-            'publisher_revised' => 6,
-            'to_print' => 7,
-            'published' => 8,
+            'preprint' => 4,
+            'publisher_revised' => 5,
+            'to_print' => 6,
+            'published' => 7,
         ];
 
         $currentIndex = $statusOrder[$manuscript->status] ?? 1;
@@ -299,10 +302,10 @@ class ManuscriptController extends Controller
             ['order' => 2, 'title' => 'Proses Review', 'description' => 'Reviewer mengevaluasi naskah.'],
             ['order' => 3, 'title' => 'Revisi Naskah', 'description' => 'Menunggu hasil review.'],
             ['order' => 4, 'title' => 'Naskah Disetujui', 'description' => 'Siap masuk tahap pra-cetak.'],
-            ['order' => 5, 'title' => 'Pra-Cetak Penerbit', 'description' => 'Naskah diproses oleh Penerbit.'],
-            ['order' => 6, 'title' => 'Revisi Penerbit', 'description' => 'Pemberian masukan dari Penerbit.'],
-            ['order' => 7, 'title' => 'Siap Cetak', 'description' => 'Persetujuan cetak diterbitkan.'],
-            ['order' => 8, 'title' => 'Telah Terbit', 'description' => 'Buku berhasil diterbitkan.'],
+            ['order' => 4, 'title' => 'Pra-Cetak Penerbit', 'description' => 'Naskah diproses oleh Penerbit.'],
+            ['order' => 5, 'title' => 'Revisi Penerbit', 'description' => 'Pemberian masukan dari Penerbit.'],
+            ['order' => 6, 'title' => 'Siap Cetak', 'description' => 'Persetujuan cetak diterbitkan.'],
+            ['order' => 7, 'title' => 'Telah Terbit', 'description' => 'Buku berhasil diterbitkan.'],
         ];
 
         return array_map(function ($step) use ($currentIndex) {

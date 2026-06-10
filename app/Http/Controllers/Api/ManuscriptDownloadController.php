@@ -22,8 +22,11 @@ class ManuscriptDownloadController extends Controller
     {
         $user = Auth::user();
 
-        // Cek akses: pemilik atau admin
-        if ($user->role->name !== 'admin' && $manuscript->user_id !== $user->id) {
+        // Cek akses: pemilik, admin, atau penerbit
+        $canAccess = $manuscript->user_id === $user->id
+            || ($user->role && in_array($user->role->name, ['admin', 'penerbit'], true));
+
+        if (!$canAccess) {
             return ApiResponse::error('Anda tidak memiliki akses untuk mengunduh naskah ini.', 403);
         }
 
