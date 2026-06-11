@@ -190,48 +190,55 @@ class ManuscriptController extends Controller
             ],
             [
                 'order' => 2,
+                'key' => 'plotting_reviewer',
+                'title' => 'Plotting Reviewer',
+                'description' => 'Admin menugaskan reviewer untuk mengevaluasi naskah.',
+                'icon' => 'assignment_ind',
+            ],
+            [
+                'order' => 3,
                 'key' => 'under_review',
                 'title' => 'Sedang Direview',
                 'description' => 'Reviewer sedang mengevaluasi naskah Anda. Estimasi waktu review adalah 14 hari kerja.',
                 'icon' => 'edit_note',
             ],
             [
-                'order' => 3,
+                'order' => 4,
                 'key' => 'revision_needed',
                 'title' => 'Revisi Naskah',
                 'description' => 'Penulis melakukan perbaikan naskah berdasarkan catatan reviewer dan mengunggah kembali naskah revisi.',
                 'icon' => 'cloud_upload',
             ],
             [
-                'order' => 4,
+                'order' => 5,
                 'key' => 'approved',
                 'title' => 'Naskah Disetujui',
                 'description' => 'Naskah telah dinyatakan layak dan siap masuk ke tahap selanjutnya.',
                 'icon' => 'verified',
             ],
             [
-                'order' => 4,
+                'order' => 5,
                 'key' => 'preprint',
                 'title' => 'Pra-Cetak Penerbit',
                 'description' => 'Naskah masuk ke tahap layouting dan pra-cetak oleh pihak Penerbit.',
                 'icon' => 'upcoming',
             ],
             [
-                'order' => 5,
+                'order' => 6,
                 'key' => 'publisher_revised',
                 'title' => 'Revisi Penerbit',
                 'description' => 'Pemberian catatan perbaikan visual/layout dari pihak Penerbit.',
                 'icon' => 'rate_review',
             ],
             [
-                'order' => 6,
+                'order' => 7,
                 'key' => 'to_print',
                 'title' => 'Siap Cetak',
                 'description' => 'Penerbit menyetujui layout akhir. Naskah siap masuk antrean cetak.',
                 'icon' => 'check_circle',
             ],
             [
-                'order' => 7,
+                'order' => 8,
                 'key' => 'published',
                 'title' => 'Telah Diterbitkan',
                 'description' => 'Buku fisik dan elektronik resmi diterbitkan.',
@@ -243,14 +250,14 @@ class ManuscriptController extends Controller
         $statusOrder = [
             'initial_draft_requested' => 1,
             'draft_uploaded' => 2,
-            'under_review' => 2,
-            'revision_needed' => 3,
-            'revision_uploaded' => 2, // Goes back to review cycle
-            'approved' => 4,
-            'preprint' => 4,
-            'publisher_revised' => 5,
-            'to_print' => 6,
-            'published' => 7,
+            'under_review' => 3,
+            'revision_needed' => 4,
+            'revision_uploaded' => 3, // Goes back to review cycle
+            'approved' => 5,
+            'preprint' => 5,
+            'publisher_revised' => 6,
+            'to_print' => 7,
+            'published' => 8,
         ];
 
         $currentIndex = $statusOrder[$manuscript->status] ?? 1;
@@ -284,28 +291,38 @@ class ManuscriptController extends Controller
         $statusOrder = [
             'initial_draft_requested' => 1,
             'draft_uploaded' => 2,
-            'under_review' => 2,
-            'revision_needed' => 3,
-            'revision_uploaded' => 2,
-            'approved' => 4,
-            'preprint' => 4,
-            'publisher_revised' => 5,
-            'to_print' => 6,
-            'published' => 7,
+            'under_review' => 3,
+            'revision_uploaded' => 3,
+            'revision_needed' => 4,
+            'approved' => 5,
+            'preprint' => 5,
+            'publisher_revised' => 6,
+            'to_print' => 7,
+            'published' => 8,
         ];
 
         $currentIndex = $statusOrder[$manuscript->status] ?? 1;
 
+        // Ambil nama reviewer jika ada
+        $reviewerNames = \App\Models\ReviewerAssignment::where('manuscript_id', $manuscript->id)
+            ->pluck('reviewer_name')
+            ->implode(', ');
+
+        $plottingDesc = $reviewerNames 
+            ? 'Reviewer ditugaskan: ' . $reviewerNames 
+            : 'Menunggu penugasan reviewer oleh admin.';
+
         $steps = [
             ['order' => 0, 'title' => 'Pendaftaran Hibah', 'description' => 'Disetujui oleh admin.'],
             ['order' => 1, 'title' => 'Pengumpulan Draft Awal', 'description' => 'Batas akhir: ' . ($manuscript->deadline_draft?->format('d M Y') ?? 'Belum ditentukan')],
-            ['order' => 2, 'title' => 'Proses Review', 'description' => 'Reviewer mengevaluasi naskah.'],
-            ['order' => 3, 'title' => 'Revisi Naskah', 'description' => 'Menunggu hasil review.'],
-            ['order' => 4, 'title' => 'Naskah Disetujui', 'description' => 'Siap masuk tahap pra-cetak.'],
-            ['order' => 4, 'title' => 'Pra-Cetak Penerbit', 'description' => 'Naskah diproses oleh Penerbit.'],
-            ['order' => 5, 'title' => 'Revisi Penerbit', 'description' => 'Pemberian masukan dari Penerbit.'],
-            ['order' => 6, 'title' => 'Siap Cetak', 'description' => 'Persetujuan cetak diterbitkan.'],
-            ['order' => 7, 'title' => 'Telah Terbit', 'description' => 'Buku berhasil diterbitkan.'],
+            ['order' => 2, 'title' => 'Plotting Reviewer', 'description' => $plottingDesc],
+            ['order' => 3, 'title' => 'Proses Review', 'description' => 'Reviewer mengevaluasi naskah.'],
+            ['order' => 4, 'title' => 'Revisi Naskah', 'description' => 'Menunggu hasil review.'],
+            ['order' => 5, 'title' => 'Naskah Disetujui', 'description' => 'Siap masuk tahap pra-cetak.'],
+            ['order' => 5, 'title' => 'Pra-Cetak Penerbit', 'description' => 'Naskah diproses oleh Penerbit.'],
+            ['order' => 6, 'title' => 'Revisi Penerbit', 'description' => 'Pemberian masukan dari Penerbit.'],
+            ['order' => 7, 'title' => 'Siap Cetak', 'description' => 'Persetujuan cetak diterbitkan.'],
+            ['order' => 8, 'title' => 'Telah Terbit', 'description' => 'Buku berhasil diterbitkan.'],
         ];
 
         return array_map(function ($step) use ($currentIndex) {
