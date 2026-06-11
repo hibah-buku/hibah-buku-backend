@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\Author;
 use App\Models\WillingnessForm;
 use App\Models\Contract;
+use App\Models\Manuscript;
 use App\Helpers\ApiResponse;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -166,5 +167,46 @@ class DashboardController extends Controller
             $formattedActivities,
             200
         );
+    }
+
+    public function getTasks()
+    {
+        // Unassigned manuscripts
+        $unassigned = Manuscript::with(['user.author', 'latestFile'])
+            ->whereNotIn('id', function($query) {
+                $query->select('manuscript_id')->from('reviewer_assignments');
+            })
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($m) {
+                $fileUrl = null;
+                if ($m->latestFile) {
+                    $fileUrl = \Illuminate\Support\Facades\Storage::url($m->latestFile->file_path);
+                }
+                
+                return [
+                    'manuscript_id' => $m->id,
+                    'book_title' => $m->title ?: 'Naskah Tanpa Judul',
+                    'author_id' => $m->user?->author?->id,
+                    'author_email' => $m->user?->email,
+                    'manuscript_file_url' => $fileUrl
+                ];
+            });
+
+        // Assigned (belum selesai)
+        $assigned = \App\Models\ReviewerAssignment::whereIn('status', ['assigned', 'under_review'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // Completed (selesai)
+        $completed = \App\Models\ReviewerAssignment::where('status', 'completed')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return ApiResponse::success('Daftar tugas plotting', [
+            'unassigned' => $unassigned,
+            'assigned' => $assigned,
+            'completed' => $completed
+        ]);
     }
 }

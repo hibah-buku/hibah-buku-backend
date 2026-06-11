@@ -46,6 +46,8 @@ class WillingnessForm extends Model
         'admin_notes',
     ];
     protected $casts = [
+    'created_at' => 'datetime',
+    'updated_at' => 'datetime',
     'rejected_at' => 'datetime',
 ];
 }
