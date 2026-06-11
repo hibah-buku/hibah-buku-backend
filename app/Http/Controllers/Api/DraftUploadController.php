@@ -197,7 +197,8 @@ class DraftUploadController extends Controller
             return ApiResponse::error('Anda tidak memiliki akses ke naskah ini.', 403);
         }
 
-        if ($manuscript->status !== Manuscript::STATUS_REVISION_NEEDED) {
+        $oldStatus = $manuscript->status;
+        if ($oldStatus !== Manuscript::STATUS_REVISION_NEEDED && $oldStatus !== Manuscript::STATUS_PUBLISHER_REVISED) {
             return ApiResponse::error(
                 'Naskah tidak dalam status revisi. Status saat ini: ' . $manuscript->status_label,
                 422
@@ -239,8 +240,14 @@ class DraftUploadController extends Controller
                 'mime_type' => $file->getClientMimeType(),
             ]);
 
-            $oldStatus = $manuscript->status;
-            $updateData = ['status' => Manuscript::STATUS_REVISION_UPLOADED];
+            // Tentukan status berikutnya:
+            // Jika revisi dari penerbit, kembalikan ke preprint.
+            // Jika revisi dari reviewer, ubah ke revision_uploaded.
+            $newStatus = ($oldStatus === Manuscript::STATUS_PUBLISHER_REVISED)
+                ? Manuscript::STATUS_PREPRINT
+                : Manuscript::STATUS_REVISION_UPLOADED;
+
+            $updateData = ['status' => $newStatus];
             if ($request->filled('title')) {
                 $updateData['title'] = $request->title;
             }
@@ -265,34 +272,38 @@ class DraftUploadController extends Controller
                     'author_id' => $user->author->id,
                     'contract_id' => $manuscript->contract_id,
                     'from_status' => $oldStatus,
-                    'to_status' => Manuscript::STATUS_REVISION_UPLOADED,
+                    'to_status' => $newStatus,
                     'triggered_by' => 'penulis:' . $user->id,
                     'triggered_at' => now(),
-                    'notes' => "Revisi naskah diunggah: {$originalName}",
+                    'notes' => $oldStatus === Manuscript::STATUS_PUBLISHER_REVISED
+                        ? "Revisi naskah pra-cetak diunggah untuk penerbit: {$originalName}"
+                        : "Revisi naskah diunggah: {$originalName}",
                 ]);
             }
 
-            // Update all reviewer assignments for this manuscript
-            $fileUrl = \Illuminate\Support\Facades\Storage::url($path);
-            $assignments = \App\Models\ReviewerAssignment::where('manuscript_id', $manuscript->id)->get();
-            foreach ($assignments as $assignment) {
-                $assignment->update([
-                    'manuscript_file_url' => $fileUrl,
-                    'status' => 'assigned',
-                    'final_score' => null,
-                    'rekomendasi_akhir' => null,
-                    'general_comments' => null,
-                    'submitted_at' => null,
-                ]);
+            // Update reviewer assignments ONLY if the old status was revision_needed (reviewer's request)
+            if ($oldStatus === Manuscript::STATUS_REVISION_NEEDED) {
+                $fileUrl = \Illuminate\Support\Facades\Storage::url($path);
+                $assignments = \App\Models\ReviewerAssignment::where('manuscript_id', $manuscript->id)->get();
+                foreach ($assignments as $assignment) {
+                    $assignment->update([
+                        'manuscript_file_url' => $fileUrl,
+                        'status' => 'assigned',
+                        'final_score' => null,
+                        'rekomendasi_akhir' => null,
+                        'general_comments' => null,
+                        'submitted_at' => null,
+                    ]);
 
-                // Kirim email penugasan ulang/revisi ke reviewer
-                try {
-                    $reviewerEmail = $assignment->reviewer_email;
-                    if ($reviewerEmail) {
-                        \Illuminate\Support\Facades\Mail::to($reviewerEmail)->send(new \App\Mail\ReviewerAssignedMail($assignment));
+                    // Kirim email penugasan ulang/revisi ke reviewer
+                    try {
+                        $reviewerEmail = $assignment->reviewer_email;
+                        if ($reviewerEmail) {
+                            \Illuminate\Support\Facades\Mail::to($reviewerEmail)->send(new \App\Mail\ReviewerAssignedMail($assignment));
+                        }
+                    } catch (\Exception $mailEx) {
+                        Log::error('Gagal mengirim email penugasan revisi ke ' . ($reviewerEmail ?? '') . ': ' . $mailEx->getMessage());
                     }
-                } catch (\Exception $mailEx) {
-                    Log::error('Gagal mengirim email penugasan revisi ke ' . ($reviewerEmail ?? '') . ': ' . $mailEx->getMessage());
                 }
             }
 
@@ -317,8 +328,12 @@ class DraftUploadController extends Controller
 
             $manuscript->load(['bookMetadata', 'latestFile', 'manuscriptFiles', 'user']);
 
+            $successMessage = ($oldStatus === Manuscript::STATUS_PUBLISHER_REVISED)
+                ? 'Revisi naskah untuk penerbit berhasil diunggah. Menunggu verifikasi pra-cetak.'
+                : 'Revisi naskah berhasil diunggah. Menunggu review ulang.';
+
             return ApiResponse::success(
-                'Revisi naskah berhasil diunggah. Menunggu review ulang.',
+                $successMessage,
                 new ManuscriptResource($manuscript)
             );
 
