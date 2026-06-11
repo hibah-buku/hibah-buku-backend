@@ -217,28 +217,28 @@ class ManuscriptController extends Controller
                 'icon' => 'verified',
             ],
             [
-                'order' => 5,
+                'order' => 6,
                 'key' => 'preprint',
                 'title' => 'Pra-Cetak Penerbit',
                 'description' => 'Naskah masuk ke tahap layouting dan pra-cetak oleh pihak Penerbit.',
                 'icon' => 'upcoming',
             ],
             [
-                'order' => 6,
+                'order' => 7,
                 'key' => 'publisher_revised',
                 'title' => 'Revisi Penerbit',
                 'description' => 'Pemberian catatan perbaikan visual/layout dari pihak Penerbit.',
                 'icon' => 'rate_review',
             ],
             [
-                'order' => 7,
+                'order' => 8,
                 'key' => 'to_print',
                 'title' => 'Siap Cetak',
                 'description' => 'Penerbit menyetujui layout akhir. Naskah siap masuk antrean cetak.',
                 'icon' => 'check_circle',
             ],
             [
-                'order' => 8,
+                'order' => 9,
                 'key' => 'published',
                 'title' => 'Telah Diterbitkan',
                 'description' => 'Buku fisik dan elektronik resmi diterbitkan.',
@@ -254,10 +254,10 @@ class ManuscriptController extends Controller
             'revision_needed' => 4,
             'revision_uploaded' => 3, // Goes back to review cycle
             'approved' => 5,
-            'preprint' => 5,
-            'publisher_revised' => 6,
-            'to_print' => 7,
-            'published' => 8,
+            'preprint' => 6,
+            'publisher_revised' => 7,
+            'to_print' => 8,
+            'published' => 9,
         ];
 
         $currentIndex = $statusOrder[$manuscript->status] ?? 1;
@@ -295,10 +295,10 @@ class ManuscriptController extends Controller
             'revision_uploaded' => 3,
             'revision_needed' => 4,
             'approved' => 5,
-            'preprint' => 5,
-            'publisher_revised' => 6,
-            'to_print' => 7,
-            'published' => 8,
+            'preprint' => 6,
+            'publisher_revised' => 7,
+            'to_print' => 8,
+            'published' => 9,
         ];
 
         $currentIndex = $statusOrder[$manuscript->status] ?? 1;
@@ -319,10 +319,10 @@ class ManuscriptController extends Controller
             ['order' => 3, 'title' => 'Proses Review', 'description' => 'Reviewer mengevaluasi naskah.'],
             ['order' => 4, 'title' => 'Revisi Naskah', 'description' => 'Menunggu hasil review.'],
             ['order' => 5, 'title' => 'Naskah Disetujui', 'description' => 'Siap masuk tahap pra-cetak.'],
-            ['order' => 5, 'title' => 'Pra-Cetak Penerbit', 'description' => 'Naskah diproses oleh Penerbit.'],
-            ['order' => 6, 'title' => 'Revisi Penerbit', 'description' => 'Pemberian masukan dari Penerbit.'],
-            ['order' => 7, 'title' => 'Siap Cetak', 'description' => 'Persetujuan cetak diterbitkan.'],
-            ['order' => 8, 'title' => 'Telah Terbit', 'description' => 'Buku berhasil diterbitkan.'],
+            ['order' => 6, 'title' => 'Pra-Cetak Penerbit', 'description' => 'Naskah diproses oleh Penerbit.'],
+            ['order' => 7, 'title' => 'Revisi Penerbit', 'description' => 'Pemberian masukan dari Penerbit.'],
+            ['order' => 8, 'title' => 'Siap Cetak', 'description' => 'Persetujuan cetak diterbitkan.'],
+            ['order' => 9, 'title' => 'Telah Terbit', 'description' => 'Buku berhasil diterbitkan.'],
         ];
 
         return array_map(function ($step) use ($currentIndex) {
