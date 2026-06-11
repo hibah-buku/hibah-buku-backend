@@ -217,14 +217,40 @@ class ReviewerAssignmentController extends Controller
                 );
             }
 
+            $rekomendasi = $request->input('rekomendasi_akhir');
+
             $assignment->update([
                 'final_score' => $request->input('final_score'),
                 'status' => 'completed',
-                'rekomendasi_akhir' => $request->input('rekomendasi_akhir'),
+                'rekomendasi_akhir' => $rekomendasi,
                 'general_comments' => $request->input('general_comments'),
                 'reviewer_email' => $request->input('reviewer_email') ?: $assignment->reviewer_email,
                 'submitted_at' => now(),
             ]);
+
+            // Update status manuscript berdasarkan rekomendasi reviewer
+            $manuscript = $assignment->manuscript;
+            if ($manuscript) {
+                $oldStatus = $manuscript->status;
+                $newStatus = ($rekomendasi === 'Tanpa Perbaikan')
+                    ? Manuscript::STATUS_APPROVED
+                    : Manuscript::STATUS_REVISION_NEEDED;
+
+                $manuscript->update(['status' => $newStatus]);
+
+                $author = $manuscript->user?->author;
+                if ($author) {
+                    StatusLog::create([
+                        'author_id'    => $author->id,
+                        'contract_id'  => $manuscript->contract_id,
+                        'from_status'  => $oldStatus,
+                        'to_status'    => $newStatus,
+                        'triggered_by' => 'reviewer:' . $assignment->reviewer_id,
+                        'triggered_at' => now(),
+                        'notes'        => 'Reviewer submit hasil review. Rekomendasi: ' . ($rekomendasi ?? '-'),
+                    ]);
+                }
+            }
 
             DB::commit();
 
@@ -276,11 +302,18 @@ class ReviewerAssignmentController extends Controller
 
     private function notifyReviewCompletion(ReviewerAssignment $assignment): void
     {
-        $authorEmail = $assignment->author_email ?: $assignment->manuscript?->user?->email;
-        $authorName = $assignment->author?->user?->name ?: $assignment->manuscript?->user?->name ?: 'Penulis';
-        $bookTitle = $assignment->book_title ?: ($assignment->manuscript?->title ?? 'Naskah Tanpa Judul');
+        // Pastikan relasi ter-load
+        $assignment->loadMissing(['author.user', 'manuscript.user']);
+
+        $authorEmail = $assignment->author_email
+            ?: $assignment->manuscript?->user?->email;
+        $authorName = $assignment->author?->user?->name
+            ?: $assignment->manuscript?->user?->name
+            ?: 'Penulis';
+        $bookTitle = $assignment->book_title
+            ?: ($assignment->manuscript?->title ?? 'Naskah Tanpa Judul');
         $deadlineRevision = $assignment->deadline_review
-            ? $assignment->deadline_review->translatedFormat('d F Y')
+            ? \Carbon\Carbon::parse($assignment->deadline_review)->locale('id')->isoFormat('D MMMM Y')
             : '-';
         $reviewUrl = url('/api/assignments/' . $assignment->id);
 

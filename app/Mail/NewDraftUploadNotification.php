@@ -3,8 +3,8 @@
 namespace App\Mail;
 
 /**
- * Dikirim ke semua admin ketika ada draft naskah baru diupload oleh penulis.
- * Vars: manuscript_id, author_name, book_title, book_type, uploaded_at, review_url
+ * Dikirim ke semua admin ketika penulis mengupload draft naskah awal.
+ * Vars: manuscript_id, author_name, book_title, book_type, uploaded_at, review_url, admin_name
  */
 class NewDraftUploadNotification extends BaseNotificationMail
 {
@@ -12,11 +12,11 @@ class NewDraftUploadNotification extends BaseNotificationMail
 
     protected function defaultSubject(): string
     {
-        return 'Draft Naskah Baru Diupload - Perlu Plotting Reviewer';
+        return 'Draft Naskah Baru Diupload – Siap untuk Plotting Reviewer';
     }
 
     protected function defaultView(): string
     {
-        return 'emails.manuscript.new-upload';
+        return 'emails.draft.new-upload';
     }
 }

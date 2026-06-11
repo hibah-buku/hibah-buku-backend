@@ -274,6 +274,23 @@ class DraftUploadController extends Controller
 
             DB::commit();
 
+            // Kirim notifikasi ke semua penerbit bahwa revisi telah diupload
+            try {
+                $reviewUrl = url('/api/publisher/manuscripts/' . $manuscript->id);
+                $this->notificationService->sendRevisionUploadedToPublishers(
+                    manuscriptId: $manuscript->id,
+                    authorName: $user->name,
+                    bookTitle: $manuscript->title,
+                    uploadedAt: now()->format('Y-m-d H:i:s'),
+                    reviewUrl: $reviewUrl
+                );
+            } catch (\Throwable $e) {
+                Log::error('Failed to send publisher notification for revision upload', [
+                    'manuscript_id' => $manuscript->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+
             $manuscript->load(['bookMetadata', 'latestFile', 'manuscriptFiles', 'user']);
 
             return ApiResponse::success(
