@@ -336,4 +336,30 @@ class ManuscriptController extends Controller
             return $step;
         }, $steps);
     }
+
+    public function reviewResults()
+    {
+        $user = Auth::user();
+
+        if (!$user->author) {
+            return ApiResponse::success('Belum ada hasil review.', []);
+        }
+
+        // Ambil semua assignment yang bertipe 'completed' untuk naskah milik user ini
+        $assignments = \App\Models\ReviewerAssignment::where('author_id', $user->author->id)
+            ->where('status', 'completed')
+            ->orderBy('id', 'asc')
+            ->get();
+
+        $results = $assignments->map(function ($assignment, $index) {
+            return [
+                'id' => $assignment->id,
+                'reviewer' => 'Reviewer ' . chr(65 + $index), // Menghasilkan Reviewer A, Reviewer B, dst.
+                'score' => $assignment->final_score,
+                'comment' => $assignment->general_comments,
+            ];
+        });
+
+        return ApiResponse::success('Hasil review naskah Anda.', $results);
+    }
 }
