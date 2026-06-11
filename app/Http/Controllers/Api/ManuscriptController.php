@@ -360,6 +360,47 @@ class ManuscriptController extends Controller
             ];
         });
 
-        return ApiResponse::success('Hasil review naskah Anda.', $results);
+        // Ambil naskah terbaru milik user ini untuk mencari review dari publisher
+        $manuscript = Manuscript::where('user_id', $user->id)->latest()->first();
+        $publisherReviews = null;
+
+        if ($manuscript) {
+            $checks = \App\Models\PublisherCheck::where('manuscript_id', $manuscript->id)
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            $decisions = \App\Models\PublisherDecision::where('manuscript_id', $manuscript->id)
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            if ($checks->isNotEmpty() || $decisions->isNotEmpty()) {
+                $publisherReviews = [
+                    'checks' => $checks->map(function ($check) {
+                        return [
+                            'id' => $check->id,
+                            'check_notes' => $check->check_notes,
+                            'cover_design_ok' => (bool)$check->cover_design_ok,
+                            'page_count_ok' => (bool)$check->page_count_ok,
+                            'admin_docs_ok' => (bool)$check->admin_docs_ok,
+                            'created_at' => $check->created_at?->toDateTimeString(),
+                        ];
+                    }),
+                    'decisions' => $decisions->map(function ($decision) {
+                        return [
+                            'id' => $decision->id,
+                            'decision' => $decision->decision,
+                            'decision_label' => $decision->decision === 'approved' ? 'Siap Cetak' : 'Revisi Penerbit',
+                            'revision_notes' => $decision->revision_notes,
+                            'decided_at' => $decision->decided_at?->toDateTimeString() ?? $decision->created_at?->toDateTimeString(),
+                        ];
+                    }),
+                ];
+            }
+        }
+
+        return ApiResponse::success('Hasil review naskah Anda.', [
+            'reviewer_reviews' => $results,
+            'publisher_reviews' => $publisherReviews,
+        ]);
     }
 }

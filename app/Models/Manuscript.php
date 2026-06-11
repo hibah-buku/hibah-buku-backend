@@ -138,6 +138,7 @@ class Manuscript extends Model
         return in_array($this->status, [
             self::STATUS_INITIAL_DRAFT_REQUESTED,
             self::STATUS_REVISION_NEEDED,
+            self::STATUS_PUBLISHER_REVISED,
         ]);
     }
 }
