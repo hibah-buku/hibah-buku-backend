@@ -16,9 +16,9 @@ class AuthorDocumentResource extends JsonResource
     public function toArray(Request $request): array
     {
         $documentLabels = [
-            'ktp' => 'Kartu Tanda Penduduk (KTP)',
             'surat_pernyataan' => 'Surat Pernyataan Penulis',
-            'rekening' => 'Buku Rekening Bank',
+            'scan_bermeterai' => 'Scan Bermeterai',
+            'dokumen_pendukung' => 'Dokumen Pendukung Lain',
         ];
 
         $label = $documentLabels[$this->document_type] ?? ucwords(str_replace('_', ' ', $this->document_type));
