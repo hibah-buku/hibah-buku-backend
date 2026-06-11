@@ -232,29 +232,105 @@ class ReviewerAssignmentController extends Controller
             $manuscript = $assignment->manuscript;
             if ($manuscript) {
                 $oldStatus = $manuscript->status;
-                $newStatus = ($rekomendasi === 'Tanpa Perbaikan')
-                    ? Manuscript::STATUS_APPROVED
-                    : Manuscript::STATUS_REVISION_NEEDED;
-
-                $manuscript->update(['status' => $newStatus]);
-
                 $author = $manuscript->user?->author;
-                if ($author) {
-                    StatusLog::create([
-                        'author_id'    => $author->id,
-                        'contract_id'  => $manuscript->contract_id,
-                        'from_status'  => $oldStatus,
-                        'to_status'    => $newStatus,
-                        'triggered_by' => 'reviewer:' . $assignment->reviewer_id,
-                        'triggered_at' => now(),
-                        'notes'        => 'Reviewer submit hasil review. Rekomendasi: ' . ($rekomendasi ?? '-'),
-                    ]);
+                $authorName = $author?->user?->name ?: ($manuscript->user?->name ?: 'Penulis');
+                $bookTitle = $assignment->book_title ?: ($manuscript->title ?: 'Naskah Tanpa Judul');
+
+                if ($rekomendasi === 'Tanpa Perbaikan') {
+                    // 1. Update ke STATUS_APPROVED
+                    $manuscript->update(['status' => Manuscript::STATUS_APPROVED]);
+                    
+                    if ($author) {
+                        StatusLog::create([
+                            'author_id'    => $author->id,
+                            'contract_id'  => $manuscript->contract_id,
+                            'from_status'  => $oldStatus,
+                            'to_status'    => Manuscript::STATUS_APPROVED,
+                            'triggered_by' => 'reviewer:' . $assignment->reviewer_id,
+                            'triggered_at' => now(),
+                            'notes'        => 'Naskah disetujui oleh reviewer tanpa perbaikan.',
+                        ]);
+                    }
+
+                    // Kirim email persetujuan ke penulis
+                    try {
+                        $authorEmail = $assignment->author_email ?: $manuscript->user?->email;
+                        if ($authorEmail) {
+                            $subjectAuthor = 'Naskah Anda Telah Disetujui oleh Reviewer: ' . $bookTitle;
+                            $bodyAuthor = "Halo {$authorName},\n\n"
+                                . "Selamat! Naskah Anda yang berjudul \"{$bookTitle}\" telah disetujui oleh reviewer tanpa perbaikan.\n"
+                                . "Naskah Anda kini telah otomatis dipindahkan ke tahap Pra-Cetak oleh Penerbit (Publisher).\n\n"
+                                . "Terima kasih.";
+
+                            Mail::raw($bodyAuthor, function ($message) use ($authorEmail, $subjectAuthor) {
+                                $message->to($authorEmail)->subject($subjectAuthor);
+                            });
+                        }
+                    } catch (\Exception $exMail) {
+                        \Log::error('Gagal mengirim email persetujuan ke penulis: ' . $exMail->getMessage());
+                    }
+
+                    // 2. Transisi langsung ke STATUS_PREPRINT
+                    $manuscript->update(['status' => Manuscript::STATUS_PREPRINT]);
+                    
+                    if ($author) {
+                        StatusLog::create([
+                            'author_id'    => $author->id,
+                            'contract_id'  => $manuscript->contract_id,
+                            'from_status'  => Manuscript::STATUS_APPROVED,
+                            'to_status'    => Manuscript::STATUS_PREPRINT,
+                            'triggered_by' => 'system',
+                            'triggered_at' => now(),
+                            'notes'        => 'Naskah otomatis masuk tahap pra-cetak penerbit.',
+                        ]);
+                    }
+
+                    // Kirim email pemberitahuan pra-cetak ke publisher
+                    try {
+                        $publishers = User::with('role')
+                            ->whereHas('role', function ($query) {
+                                $query->where('name', 'penerbit');
+                            })
+                            ->whereNotNull('email')
+                            ->get();
+
+                        foreach ($publishers as $publisher) {
+                            $subjectPub = 'Naskah Baru Masuk Tahap Pra-Cetak: ' . $bookTitle;
+                            $bodyPub = "Halo {$publisher->name},\n\n"
+                                . "Naskah berjudul \"{$bookTitle}\" oleh penulis {$authorName} telah disetujui oleh reviewer dan kini telah memasuki tahap Pra-Cetak (preprint).\n"
+                                . "Silakan login ke sistem untuk memproses naskah tersebut.\n\n"
+                                . "Terima kasih.";
+
+                            Mail::raw($bodyPub, function ($message) use ($publisher, $subjectPub) {
+                                $message->to($publisher->email, $publisher->name)->subject($subjectPub);
+                            });
+                        }
+                    } catch (\Exception $exMailPub) {
+                        \Log::error('Gagal mengirim email draf masuk pra-cetak ke publisher: ' . $exMailPub->getMessage());
+                    }
+
+                } else {
+                    $newStatus = Manuscript::STATUS_REVISION_NEEDED;
+                    $manuscript->update(['status' => $newStatus]);
+
+                    if ($author) {
+                        StatusLog::create([
+                            'author_id'    => $author->id,
+                            'contract_id'  => $manuscript->contract_id,
+                            'from_status'  => $oldStatus,
+                            'to_status'    => $newStatus,
+                            'triggered_by' => 'reviewer:' . $assignment->reviewer_id,
+                            'triggered_at' => now(),
+                            'notes'        => 'Reviewer submit hasil review. Rekomendasi: ' . ($rekomendasi ?? '-'),
+                        ]);
+                    }
+
+                    // Kirim email notifikasi review biasa (Review Completed)
+                    $this->notifyReviewCompletion($assignment);
                 }
             }
 
             DB::commit();
-
-            $this->notifyReviewCompletion($assignment);
 
             return ApiResponse::success('Review berhasil dikirim.', ['assignment_id' => $assignment->id]);
         } catch (\Exception $e) {
