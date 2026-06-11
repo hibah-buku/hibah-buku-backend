@@ -17,6 +17,7 @@ use App\Mail\NewWillingnessFormAdminNotification;
 use App\Mail\NewContractUploadNotification;
 use App\Mail\NewDraftUploadNotification;
 use App\Mail\RevisionUploadedPublisherNotification;
+use App\Mail\NewDocumentUploadPublisherNotification;
 use App\Mail\ContractRejectedMail;
 use App\Models\User;
 use App\Models\Role;
@@ -206,6 +207,40 @@ class NotificationService
                     'uploaded_at'   => $uploadedAt,
                     'review_url'    => $reviewUrl,
                     'publisher_name' => $publisher->name,
+                ]),
+                $publisher->email,
+                $publisher->name
+            );
+        }
+
+        return $result;
+    }
+
+    public function sendNewDocumentUploadToPublishers(
+        string $authorName,
+        string $bookTitle,
+        string $documentTypeLabel,
+        string $uploadedAt,
+        string $reviewUrl
+    ): array {
+        $publisherRole = Role::where('name', 'penerbit')->first();
+        $publishers = User::where('role_id', $publisherRole->id)->get();
+
+        if (!$uploadedAt) {
+            $uploadedAt = now()->format('Y-m-d H:i:s');
+        }
+
+        $result = [];
+
+        foreach ($publishers as $publisher) {
+            $result[] = $this->send(
+                new NewDocumentUploadPublisherNotification([
+                    'author_name'          => $authorName,
+                    'book_title'           => $bookTitle,
+                    'document_type_label'  => $documentTypeLabel,
+                    'uploaded_at'          => $uploadedAt,
+                    'review_url'           => $reviewUrl,
+                    'publisher_name'       => $publisher->name,
                 ]),
                 $publisher->email,
                 $publisher->name
