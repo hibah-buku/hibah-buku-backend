@@ -71,15 +71,19 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/manuscripts/me', [ManuscriptController::class, 'myManuscripts']);
         Route::get('/manuscripts/me/review-results', [ManuscriptController::class, 'reviewResults']);
         Route::post('/manuscripts/upload-draft', [DraftUploadController::class, 'uploadDraft']);
-        Route::get('/manuscripts/{manuscript}', [ManuscriptController::class, 'show']);
         Route::post('/manuscripts/{manuscript}/upload-revision', [DraftUploadController::class, 'uploadRevision']);
         Route::get('/manuscripts/{manuscript}/status', [ManuscriptController::class, 'status']);
-        Route::get('/manuscripts/{manuscript}/download', [ManuscriptDownloadController::class, 'download']);
 
         // Dokumen Administrasi Penulis (Author Documents)
         Route::get('/manuscripts/me/documents', [AuthorDocumentController::class, 'index']);
         Route::post('/manuscripts/me/documents', [AuthorDocumentController::class, 'upload']);
         Route::delete('/manuscripts/me/documents/{document_type}', [AuthorDocumentController::class, 'destroy']);
+    });
+
+    // Shared Manuscripts Access
+    Route::middleware('role:penulis,penerbit,admin')->group(function () {
+        Route::get('/manuscripts/{manuscript}', [ManuscriptController::class, 'show']);
+        Route::get('/manuscripts/{manuscript}/download', [ManuscriptDownloadController::class, 'download']);
     });
 
     // Reviewer Assignments & Rubrics
@@ -99,8 +103,6 @@ Route::middleware('auth:api')->group(function () {
     });
 
     Route::middleware('role:penerbit')->group(function () {
-        Route::get('/manuscripts/{manuscript}', [ManuscriptController::class, 'show']);
-        Route::get('/manuscripts/{manuscript}/download', [ManuscriptDownloadController::class, 'download']);
         Route::get('/publisher/dashboard', [PublisherController::class, 'dashboard']);
         Route::get('/publisher/manuscripts', [PublisherController::class, 'index']);
         Route::get('/publisher/manuscripts/{id}', [PublisherController::class, 'show']);
