@@ -272,6 +272,30 @@ class DraftUploadController extends Controller
                 ]);
             }
 
+            // Update all reviewer assignments for this manuscript
+            $fileUrl = \Illuminate\Support\Facades\Storage::url($path);
+            $assignments = \App\Models\ReviewerAssignment::where('manuscript_id', $manuscript->id)->get();
+            foreach ($assignments as $assignment) {
+                $assignment->update([
+                    'manuscript_file_url' => $fileUrl,
+                    'status' => 'assigned',
+                    'final_score' => null,
+                    'rekomendasi_akhir' => null,
+                    'general_comments' => null,
+                    'submitted_at' => null,
+                ]);
+
+                // Kirim email penugasan ulang/revisi ke reviewer
+                try {
+                    $reviewerEmail = $assignment->reviewer_email;
+                    if ($reviewerEmail) {
+                        \Illuminate\Support\Facades\Mail::to($reviewerEmail)->send(new \App\Mail\ReviewerAssignedMail($assignment));
+                    }
+                } catch (\Exception $mailEx) {
+                    Log::error('Gagal mengirim email penugasan revisi ke ' . ($reviewerEmail ?? '') . ': ' . $mailEx->getMessage());
+                }
+            }
+
             DB::commit();
 
             // Kirim notifikasi ke semua penerbit bahwa revisi telah diupload

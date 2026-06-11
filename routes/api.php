@@ -69,6 +69,7 @@ Route::middleware('auth:api')->group(function () {
         // Naskah (Manuscript)
         Route::get('/manuscripts/dashboard', [ManuscriptController::class, 'dashboard']);
         Route::get('/manuscripts/me', [ManuscriptController::class, 'myManuscripts']);
+        Route::get('/manuscripts/me/review-results', [ManuscriptController::class, 'reviewResults']);
         Route::post('/manuscripts/upload-draft', [DraftUploadController::class, 'uploadDraft']);
         Route::get('/manuscripts/{manuscript}', [ManuscriptController::class, 'show']);
         Route::post('/manuscripts/{manuscript}/upload-revision', [DraftUploadController::class, 'uploadRevision']);
