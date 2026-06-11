@@ -276,11 +276,18 @@ class ReviewerAssignmentController extends Controller
 
     private function notifyReviewCompletion(ReviewerAssignment $assignment): void
     {
-        $authorEmail = $assignment->author_email ?: $assignment->manuscript?->user?->email;
-        $authorName = $assignment->author?->user?->name ?: $assignment->manuscript?->user?->name ?: 'Penulis';
-        $bookTitle = $assignment->book_title ?: ($assignment->manuscript?->title ?? 'Naskah Tanpa Judul');
+        // Pastikan relasi ter-load
+        $assignment->loadMissing(['author.user', 'manuscript.user']);
+
+        $authorEmail = $assignment->author_email
+            ?: $assignment->manuscript?->user?->email;
+        $authorName = $assignment->author?->user?->name
+            ?: $assignment->manuscript?->user?->name
+            ?: 'Penulis';
+        $bookTitle = $assignment->book_title
+            ?: ($assignment->manuscript?->title ?? 'Naskah Tanpa Judul');
         $deadlineRevision = $assignment->deadline_review
-            ? $assignment->deadline_review->translatedFormat('d F Y')
+            ? \Carbon\Carbon::parse($assignment->deadline_review)->locale('id')->isoFormat('D MMMM Y')
             : '-';
         $reviewUrl = url('/api/assignments/' . $assignment->id);
 

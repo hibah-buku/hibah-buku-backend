@@ -16,6 +16,7 @@ use App\Models\NotificationLog;
 use App\Mail\NewWillingnessFormAdminNotification;
 use App\Mail\NewContractUploadNotification;
 use App\Mail\NewDraftUploadNotification;
+use App\Mail\RevisionUploadedPublisherNotification;
 use App\Mail\ContractRejectedMail;
 use App\Models\User;
 use App\Models\Role;
@@ -174,6 +175,40 @@ class NotificationService
                 ]),
                 $admin->email,
                 $admin->name
+            );
+        }
+
+        return $result;
+    }
+
+    public function sendRevisionUploadedToPublishers(
+        int $manuscriptId,
+        string $authorName,
+        string $bookTitle,
+        string $uploadedAt,
+        string $reviewUrl
+    ): array {
+        $publisherRole = Role::where('name', 'penerbit')->first();
+        $publishers = User::where('role_id', $publisherRole->id)->get();
+
+        if (!$uploadedAt) {
+            $uploadedAt = now()->format('Y-m-d H:i:s');
+        }
+
+        $result = [];
+
+        foreach ($publishers as $publisher) {
+            $result[] = $this->send(
+                new RevisionUploadedPublisherNotification([
+                    'manuscript_id' => $manuscriptId,
+                    'author_name'   => $authorName,
+                    'book_title'    => $bookTitle,
+                    'uploaded_at'   => $uploadedAt,
+                    'review_url'    => $reviewUrl,
+                    'publisher_name' => $publisher->name,
+                ]),
+                $publisher->email,
+                $publisher->name
             );
         }
 
