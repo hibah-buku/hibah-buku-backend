@@ -53,6 +53,8 @@ Route::middleware('auth:api')->group(function () {
 
         // Kontrak Manajemen
         Route::get('/contracts', [ContractController::class, 'index']);
+        Route::get('/contracts/{contract}', [ContractController::class, 'show'])->where('contract', '[0-9]+');
+        Route::get('/contracts/{contract}/preview', [ContractController::class, 'previewPdf']);
         Route::patch('/contracts/{contract}/validate', [ContractController::class, 'validateContract']);
         Route::patch('/contracts/{contract}/reject', [ContractController::class, 'rejectContract']);
         Route::get('/contracts/{contract}/download', [ContractController::class, 'download']);
@@ -61,9 +63,8 @@ Route::middleware('auth:api')->group(function () {
     // Penulis Only
     Route::middleware('role:penulis')->group(function () {
         // Kontrak
-        Route::post('/contracts', [ContractController::class, 'upload']);
         Route::get('/contracts/me', [ContractController::class, 'myContract']);
-        Route::get('/contracts/{contract}/download', [ContractController::class, 'download']);
+        Route::post('/contracts', [ContractController::class, 'upload']);
 
         // Naskah (Manuscript)
         Route::get('/manuscripts/dashboard', [ManuscriptController::class, 'dashboard']);

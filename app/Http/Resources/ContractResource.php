@@ -34,6 +34,7 @@ class ContractResource extends JsonResource
                 'uploaded_at' => $this->created_at->toISOString(),
             ],
             'status' => $this->status,
+            'validated_at' => $this->validated_at,
             'notes' => $this->when($request->user()?->role?->name === 'admin', $this->notes),
 
             '_links' => $this->links($request),
