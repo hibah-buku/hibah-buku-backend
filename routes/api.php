@@ -78,6 +78,7 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/manuscripts/me/documents', [AuthorDocumentController::class, 'index']);
         Route::post('/manuscripts/me/documents', [AuthorDocumentController::class, 'upload']);
         Route::delete('/manuscripts/me/documents/{document_type}', [AuthorDocumentController::class, 'destroy']);
+        Route::get('/manuscripts/me/documents/{document_type}/download', [AuthorDocumentController::class, 'download']);
     });
 
     // Shared Manuscripts Access
