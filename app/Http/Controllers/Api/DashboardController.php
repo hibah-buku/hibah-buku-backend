@@ -144,7 +144,7 @@ class DashboardController extends Controller
                     'id' => $contract->id,
                     'type' => $type,
                     'title' => $title,
-                    'description' => "Kontrak #{$contract->id} oleh {$contract->author->user->name}",
+                    'description' => "Kontrak #{$contract->id} oleh " . ($contract->author?->user?->name ?? 'User telah dihapus'),
                     'created_at' => $contract->created_at,
                     'link' => "/api/contracts/{$contract->id}"
                 ];
@@ -183,7 +183,7 @@ class DashboardController extends Controller
                 if ($m->latestFile) {
                     $fileUrl = \Illuminate\Support\Facades\Storage::url($m->latestFile->file_path);
                 }
-                
+
                 return [
                     'manuscript_id' => $m->id,
                     'book_title' => $m->title ?: 'Naskah Tanpa Judul',

@@ -23,9 +23,9 @@ class ContractResource extends JsonResource
         return [
             'id' => $this->id,
             'author' => [
-                'id' => $this->author->id,
-                'name' => $this->author->user->name,
-                'email' => $this->author->user->email,
+                'id' => $this->author->id ?? 'User telah dihapus.',
+                'name' => $this->author->user->name ?? 'User telah dihapus.',
+                'email' => $this->author->user->email ?? 'User telah dihapus.',
             ],
             'file_info' => [
                 'file_path' => $this->file_path,
