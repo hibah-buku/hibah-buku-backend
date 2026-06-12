@@ -20,9 +20,9 @@ class UserResource extends JsonResource
             'name' => $this->name,
             'email' => $this->email,
             'role' => $this->role?->name,
-
-            // Tambahan untuk fitur status active/inactive
             'status' => $this->deleted_at ? 'inactive' : ($this->status ?? 'active'),
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
             'deleted_at' => $this->deleted_at,
 
             '_links' => $this->links($request),
