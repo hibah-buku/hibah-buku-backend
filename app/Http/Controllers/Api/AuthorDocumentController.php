@@ -195,4 +195,43 @@ class AuthorDocumentController extends Controller
             return ApiResponse::error('Gagal menghapus dokumen: ' . $e->getMessage(), 500);
         }
     }
+
+    /**
+     * UC-05: Penulis Mengunduh Dokumen Administrasi Tertentu
+     * Endpoint: GET /api/manuscripts/me/documents/{document_type}/download
+     * Access: Penulis Only
+     */
+    public function download($document_type)
+    {
+        $user = Auth::user();
+
+        $manuscript = Manuscript::where('user_id', $user->id)
+            ->whereNotIn('status', [Manuscript::STATUS_PUBLISHED])
+            ->latest()
+            ->first();
+
+        if (!$manuscript) {
+            return ApiResponse::error('Anda belum memiliki naskah aktif.', 404);
+        }
+
+        $document = AuthorDocument::where('manuscript_id', $manuscript->id)
+            ->where('document_type', $document_type)
+            ->first();
+
+        if (!$document) {
+            return ApiResponse::error('Dokumen administrasi tidak ditemukan.', 404);
+        }
+
+        // Memeriksa keberadaan file di storage
+        if (!Storage::disk('public')->exists($document->file_path)) {
+            return ApiResponse::error('Berkas file tidak ditemukan di server.', 404);
+        }
+
+        $path = Storage::disk('public')->path($document->file_path);
+        $fileExt = pathinfo($path, PATHINFO_EXTENSION);
+        $fileName = strtoupper($document_type) . '.' . $fileExt;
+
+        return response()->download($path, $fileName);
+    }
 }
+

@@ -349,6 +349,10 @@ class PublisherController extends Controller
         if ($validated['decision'] === 'approved') {
             $manuscript->status = 'to_print'; 
             $eventName = 'PublisherApproved';
+            
+            // Auto-verify all administrative documents uploaded by the author for this manuscript
+            \App\Models\AuthorDocument::where('manuscript_id', $manuscript->id)
+                ->update(['is_verified' => true]);
         } else {
             $manuscript->status = 'publisher_revised'; 
             $eventName = 'PublisherRevised';
